@@ -1,0 +1,7 @@
+bbackjk:
+  http:
+    enable: true
+    connect:
+      timeout: 180 # 3? (??: ?)
+      pool-size: 5 # 5? (??: ?)
+      keep-alive: 5 # 5? (??: ?)
