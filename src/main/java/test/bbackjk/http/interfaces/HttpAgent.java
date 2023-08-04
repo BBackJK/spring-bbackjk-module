@@ -1,6 +1,5 @@
 package test.bbackjk.http.interfaces;
 
-import test.bbackjk.http.configuration.RestClientConnectProperties;
 import test.bbackjk.http.exceptions.RestClientCallException;
 import test.bbackjk.http.wrapper.RequestMetadata;
 import test.bbackjk.http.wrapper.RestResponse;
@@ -13,5 +12,4 @@ public interface HttpAgent {
     RestResponse doPut(RequestMetadata requestMetadata) throws RestClientCallException;
     RestResponse doDelete(RequestMetadata requestMetadata) throws RestClientCallException;
 
-    RestClientConnectProperties getProperties();
 }

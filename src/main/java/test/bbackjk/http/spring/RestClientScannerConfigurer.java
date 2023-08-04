@@ -17,6 +17,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
+import test.bbackjk.http.interfaces.HttpAgent;
 
 import java.lang.annotation.Annotation;
 import java.util.Map;
@@ -47,6 +48,7 @@ public class RestClientScannerConfigurer implements InitializingBean, Applicatio
     public void postProcessBeanDefinitionRegistry(@NotNull BeanDefinitionRegistry registry) throws BeansException {
         ClassPathRestClientScanner scanner = new ClassPathRestClientScanner(registry);
         scanner.setAnnotationClazz(this.annotationClazz);
+        scanner.setHttpAgentBeanList(this.applicationContext.getBeanNamesForType(HttpAgent.class));
         scanner.registerFilters();
         scanner.scan(StringUtils.tokenizeToStringArray(this.basePackage, ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS));
     }

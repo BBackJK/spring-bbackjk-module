@@ -13,14 +13,14 @@ import java.lang.annotation.*;
 @Documented
 public @interface RestClient {
 
-
-    @AliasFor("url")
+    @AliasFor("subject")
     String value() default "";
     @AliasFor("value")
+    String subject() default "";
+
     String url() default "";
 
 
-//    Class<?> agent() default OkHttpAgent.class;
-    Class<?> config() default DefaultHttpAgentConfiguration.class;
+    Class<? extends HttpAgent> agent() default OkHttpAgent.class;
 
 }

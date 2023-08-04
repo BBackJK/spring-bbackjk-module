@@ -1,7 +1,7 @@
 package test.bbackjk.http.proxy;
 
 import org.springframework.util.MethodInvoker;
-import test.bbackjk.http.configuration.RestClientConnectProperties;
+import test.bbackjk.http.interfaces.HttpAgent;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -12,11 +12,11 @@ public class RestClientProxyFactory<T> {
 
     private final Map<Method, MethodInvoker> cachedClient = new ConcurrentHashMap<>();
     private final Class<T> restClientInterface;
-//    private final RestClientConnectProperties restClientConnectProperties;
+    private final HttpAgent httpAgent;
 
-    public RestClientProxyFactory(Class<T> restClientInterface) {
+    public RestClientProxyFactory(Class<T> restClientInterface, HttpAgent httpAgent) {
         this.restClientInterface = restClientInterface;
-//        this.restClientConnectProperties = connectProperties;
+        this.httpAgent = httpAgent;
     }
 
     public Class<T> getRestClientInterface() {
@@ -40,7 +40,7 @@ public class RestClientProxyFactory<T> {
 
     public T newInstance() {
         return newInstance(
-                new RestClientProxy<>(this.restClientInterface, this.cachedClient)
+                new RestClientProxy<>(this.restClientInterface, this.cachedClient, this.httpAgent)
         );
     }
 }

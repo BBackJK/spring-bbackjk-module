@@ -22,11 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 
 @Component
-public class OkHttpAgent implements HttpAgent {
+//@Primary
+public class RestTemplateAgent implements HttpAgent {
     private final OkHttpClient client;
     private final ObjectMapper om;
 
-    public OkHttpAgent(RestClientConnectProperties connectProperties) {
+    public RestTemplateAgent(RestClientConnectProperties connectProperties) {
         OkHttpClient.Builder okHttpBuilder = new OkHttpClient.Builder();
         okHttpBuilder.addInterceptor(new OkHttpInterceptor());
 
