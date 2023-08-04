@@ -1,10 +1,12 @@
 package test.bbackjk.http.configuration;
 
 import lombok.Getter;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import test.bbackjk.http.util.Nulls;
 
 @Getter
+@Configuration
 public class RestClientConnectProperties {
 
     private static final String PROPERTY_PREFIX = "bbackjk.http.connect";

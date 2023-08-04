@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Component;
 import test.bbackjk.http.configuration.RestClientConnectProperties;
 import test.bbackjk.http.exceptions.RestClientCallException;
 import test.bbackjk.http.interfaces.HttpAgent;
@@ -14,15 +15,17 @@ import test.bbackjk.http.wrapper.RequestMetadata;
 import test.bbackjk.http.wrapper.RestResponse;
 
 import java.io.IOException;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+
+@Component
 public class OkHttpAgent implements HttpAgent {
     private final OkHttpClient client;
     private final ObjectMapper om;
+    private final RestClientConnectProperties properties;
 
     public OkHttpAgent(RestClientConnectProperties connectProperties) {
         OkHttpClient.Builder okHttpBuilder = new OkHttpClient.Builder();
@@ -49,6 +52,7 @@ public class OkHttpAgent implements HttpAgent {
 
         this.client = okHttpBuilder.build();
         this.om = new ObjectMapper();
+        this.properties = connectProperties;
     }
 
 
@@ -111,6 +115,11 @@ public class OkHttpAgent implements HttpAgent {
     @Override
     public RestResponse doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
         return null;
+    }
+
+    @Override
+    public RestClientConnectProperties getProperties() {
+        return this.properties;
     }
 
     private void initQueryParameters(HttpUrl.Builder httpUrlBuilder, Map<String, String> queryValueMap) {

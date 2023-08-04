@@ -1,17 +1,22 @@
 package test.bbackjk.http.bean;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.FactoryBean;
-import test.bbackjk.http.configuration.RestClientConnectProperties;
 import test.bbackjk.http.proxy.RestClientProxyFactory;
 
+@Slf4j
 public class RestClientProxyFactoryBean<T> implements FactoryBean<T> {
 
     private final RestClientProxyFactory<T> proxyFactory;
-    private final Class<T> restClientInterface;
+    private Class<T> restClientInterface;
 
-    public RestClientProxyFactoryBean(Class<T> restClientInterface, RestClientConnectProperties connectProperties) {
+    public RestClientProxyFactoryBean(Class<T> restClientInterface) {
         this.restClientInterface = restClientInterface;
-        this.proxyFactory = new RestClientProxyFactory<>(restClientInterface, connectProperties);
+        this.proxyFactory = new RestClientProxyFactory<>(this.restClientInterface);
+    }
+
+    public void setRestClientInterface(Class<T> restClientInterface) {
+        this.restClientInterface = restClientInterface;
     }
 
     @Override

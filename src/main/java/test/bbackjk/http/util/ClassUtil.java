@@ -9,7 +9,7 @@ import java.net.URL;
 import java.util.*;
 
 @UtilityClass
-public class ClassUtils extends org.springframework.util.ClassUtils {
+public class ClassUtil extends org.springframework.util.ClassUtils {
     
     private final char PACKAGE_SEPARATOR = '.';
     private final char FILE_SEPARATOR = '/';
@@ -45,6 +45,26 @@ public class ClassUtils extends org.springframework.util.ClassUtils {
         }
         String firstVal = value.substring(0, 1);
         return value.replaceFirst(firstVal, firstVal.toUpperCase());
+    }
+
+    public ClassLoader[] getClassLoaders() {
+        return new ClassLoader[] {
+                Thread.currentThread().getContextClassLoader()
+                , ClassLoader.getSystemClassLoader()
+        };
+    }
+
+    public Class<?> classForName(String name, ClassLoader[] classLoaders) throws ClassNotFoundException {
+        for (ClassLoader cl : classLoaders) {
+            if (null != cl) {
+                try {
+                    return Class.forName(name, true, cl);
+                } catch (ClassNotFoundException e) {
+                    // ignore
+                }
+            }
+        }
+        throw new ClassNotFoundException("Cannot find class: " + name);
     }
 
     private List<File> getAllResourceFile(String resourcePath) throws IOException {

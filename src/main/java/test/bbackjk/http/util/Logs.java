@@ -10,7 +10,7 @@ public class Logs {
     private final String PREFIX = "[RestClient]";
 
     private String getFormatMessage(String msg) {
-        return String.format("%s %s", PREFIX, String.format(msg));
+        return String.format("%s %s", PREFIX, msg);
     }
 
     public void log(String message, Object... args) {

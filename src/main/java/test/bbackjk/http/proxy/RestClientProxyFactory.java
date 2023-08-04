@@ -12,11 +12,11 @@ public class RestClientProxyFactory<T> {
 
     private final Map<Method, MethodInvoker> cachedClient = new ConcurrentHashMap<>();
     private final Class<T> restClientInterface;
-    private final RestClientConnectProperties restClientConnectProperties;
+//    private final RestClientConnectProperties restClientConnectProperties;
 
-    public RestClientProxyFactory(Class<T> restClientInterface, RestClientConnectProperties connectProperties) {
+    public RestClientProxyFactory(Class<T> restClientInterface) {
         this.restClientInterface = restClientInterface;
-        this.restClientConnectProperties = connectProperties;
+//        this.restClientConnectProperties = connectProperties;
     }
 
     public Class<T> getRestClientInterface() {
@@ -40,7 +40,7 @@ public class RestClientProxyFactory<T> {
 
     public T newInstance() {
         return newInstance(
-                new RestClientProxy<>(this.restClientInterface, this.cachedClient, this.restClientConnectProperties)
+                new RestClientProxy<>(this.restClientInterface, this.cachedClient)
         );
     }
 }
