@@ -6,7 +6,7 @@ import test.bbackjk.http.wrapper.RequestMetadata;
 import java.util.Map;
 
 @UtilityClass
-public class RestUtils {
+public class RestClientUtils {
 
     public boolean isSuccess(int httpCode) {
         return httpCode / 100 == 2;
@@ -22,5 +22,9 @@ public class RestUtils {
             result = result.replaceAll("\\{" + x.getKey() + "}", x.getValue());
         }
         return result;
+    }
+
+    public <T> T orElse(T origin, T replace) {
+        return origin == null ? replace : origin;
     }
 }

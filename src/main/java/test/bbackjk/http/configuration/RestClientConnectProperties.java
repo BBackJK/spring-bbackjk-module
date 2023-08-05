@@ -3,7 +3,7 @@ package test.bbackjk.http.configuration;
 import lombok.Getter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-import test.bbackjk.http.util.Nulls;
+import test.bbackjk.http.util.RestClientUtils;
 
 @Getter
 @Configuration
@@ -23,13 +23,13 @@ public class RestClientConnectProperties {
 
     public RestClientConnectProperties(Environment env) {
         this.timout = Integer.parseInt(
-                Nulls.orElse(this.getValue(env, KEY_CONNECT_TIMEOUT), DEFAULT_CONNECT_TIMEOUT)
+                RestClientUtils.orElse(this.getValue(env, KEY_CONNECT_TIMEOUT), DEFAULT_CONNECT_TIMEOUT)
         );
         this.poolSize = Integer.parseInt(
-                Nulls.orElse(this.getValue(env, KEY_CONNECT_POOL_SIZE), DEFAULT_POOL_SIZE)
+                RestClientUtils.orElse(this.getValue(env, KEY_CONNECT_POOL_SIZE), DEFAULT_POOL_SIZE)
         );
         this.keepAlive = Integer.parseInt(
-                Nulls.orElse(this.getValue(env, KEY_CONNECT_KEEP_ALIVE), DEFAULT_KEEP_ALIVE)
+                RestClientUtils.orElse(this.getValue(env, KEY_CONNECT_KEEP_ALIVE), DEFAULT_KEEP_ALIVE)
         );
     }
 

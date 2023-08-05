@@ -5,6 +5,7 @@ import lombok.experimental.UtilityClass;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.*;
 
@@ -39,6 +40,11 @@ public class ClassUtil extends org.springframework.util.ClassUtils {
         return value.replaceFirst(firstVal, firstVal.toLowerCase());
     }
 
+    public String getGetterMethodByField(Field field) {
+        if ( field == null ) return "";
+        return "get"+toPascal(field.getName());
+    }
+
     public String toPascal(String value) {
         if ( value == null || value.isBlank() ) {
             return "";
@@ -52,6 +58,10 @@ public class ClassUtil extends org.springframework.util.ClassUtils {
                 Thread.currentThread().getContextClassLoader()
                 , ClassLoader.getSystemClassLoader()
         };
+    }
+
+    public boolean isPrimitiveInString(Class<?> clazz) {
+        return clazz != null && (isPrimitiveOrWrapper(clazz) || "String".equals(clazz.getSimpleName()));
     }
 
     public Class<?> classForName(String name, ClassLoader[] classLoaders) throws ClassNotFoundException {

@@ -10,7 +10,7 @@ import test.bbackjk.http.configuration.RestClientConnectProperties;
 import test.bbackjk.http.exceptions.RestClientCallException;
 import test.bbackjk.http.interfaces.HttpAgent;
 import test.bbackjk.http.util.Logs;
-import test.bbackjk.http.util.RestUtils;
+import test.bbackjk.http.util.RestClientUtils;
 import test.bbackjk.http.wrapper.RequestMetadata;
 import test.bbackjk.http.wrapper.RestResponse;
 
@@ -56,7 +56,7 @@ public class OkHttpAgent implements HttpAgent {
 
     @Override
     public RestResponse doGet(RequestMetadata requestMetadata) throws RestClientCallException {
-        String url = RestUtils.getParseUrl(requestMetadata);
+        String url = RestClientUtils.getParseUrl(requestMetadata);
 
         HttpUrl.Builder httpUrlBuilder = HttpUrl.get(url).newBuilder();
         this.initQueryParameters(httpUrlBuilder, requestMetadata.getQueryValuesMap());
@@ -67,7 +67,7 @@ public class OkHttpAgent implements HttpAgent {
 
         try (Response result = client.newCall(requestBuilder.build()).execute()) {
             ResponseBody responseBody = result.body();
-            return new RestResponse(result.code(), responseBody == null ? "" : responseBody.string());
+            return new RestResponse(result.code(), responseBody == null ? "" : responseBody.string(), result.message());
         } catch (IOException e) {
             throw new RestClientCallException(e);
         }
@@ -83,7 +83,7 @@ public class OkHttpAgent implements HttpAgent {
             throw new RestClientCallException(e);
         }
 
-        String url = RestUtils.getParseUrl(requestMetadata);
+        String url = RestClientUtils.getParseUrl(requestMetadata);
 
         HttpUrl.Builder httpUrlBuilder = HttpUrl.get(url).newBuilder();
         this.initQueryParameters(httpUrlBuilder, requestMetadata.getQueryValuesMap());
@@ -94,7 +94,7 @@ public class OkHttpAgent implements HttpAgent {
 
         try (Response result = client.newCall(requestBuilder.build()).execute()) {
             ResponseBody responseBody = result.body();
-            return new RestResponse(result.code(), responseBody == null ? "" : responseBody.string());
+            return new RestResponse(result.code(), responseBody == null ? "" : responseBody.string(), result.message());
         } catch (IOException e) {
             throw new RestClientCallException(e);
         }

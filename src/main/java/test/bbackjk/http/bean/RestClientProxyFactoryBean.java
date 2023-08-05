@@ -3,6 +3,7 @@ package test.bbackjk.http.bean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.FactoryBean;
 import test.bbackjk.http.interfaces.HttpAgent;
+import test.bbackjk.http.interfaces.ResponseMapper;
 import test.bbackjk.http.proxy.RestClientProxyFactory;
 
 @Slf4j
@@ -10,12 +11,10 @@ public class RestClientProxyFactoryBean<T> implements FactoryBean<T> {
 
     private final RestClientProxyFactory<T> proxyFactory;
     private final Class<T> restClientInterface;
-    private final HttpAgent httpAgent;
 
-    public RestClientProxyFactoryBean(Class<T> restClientInterface, HttpAgent httpAgent) {
+    public RestClientProxyFactoryBean(Class<T> restClientInterface, HttpAgent httpAgent, ResponseMapper dataMapper) {
         this.restClientInterface = restClientInterface;
-        this.httpAgent = httpAgent;
-        this.proxyFactory = new RestClientProxyFactory<>(this.restClientInterface, this.httpAgent);
+        this.proxyFactory = new RestClientProxyFactory<>(this.restClientInterface, httpAgent, dataMapper);
     }
 
     @Override

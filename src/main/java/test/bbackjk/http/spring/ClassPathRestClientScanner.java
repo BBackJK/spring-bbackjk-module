@@ -22,6 +22,8 @@ import test.bbackjk.http.annotations.RestClient;
 import test.bbackjk.http.bean.RestClientProxyFactoryBean;
 import test.bbackjk.http.exceptions.RestClientCommonException;
 import test.bbackjk.http.interfaces.HttpAgent;
+import test.bbackjk.http.interfaces.ResponseMapper;
+import test.bbackjk.http.mapper.DefaultResponseMapper;
 import test.bbackjk.http.util.BeansUtil;
 import test.bbackjk.http.util.ClassUtil;
 
@@ -39,6 +41,8 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
     private final ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
     private final BeanDefinitionRegistry registry;
     private Set<BeanDefinition> httpAgentBeanDefinitionSet;
+    private Set<BeanDefinition> responseMapperBeanDefinitionSet;
+    private BeanDefinition defaultResponseMapperBeanDefinition;
     private BeanDefinition defaultHttpAgentBeanDefinition;
     private Class<? extends Annotation> annotationClazz;
 
@@ -64,6 +68,21 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
             }
         }
         this.httpAgentBeanDefinitionSet = httpAgentBeanDefinitions;
+    }
+
+    public void setResponseMapperBeanDefinitionSet(String[] responseMapperBeanNames) {
+        Set<BeanDefinition> responseMapperBeanDefinitions = new LinkedHashSet<>();
+        if (responseMapperBeanNames != null) {
+            for ( String responseMapperBeanName : responseMapperBeanNames ) {
+                BeanDefinition bd = this.registry.getBeanDefinition(responseMapperBeanName);
+                // TODO: 리팩토링
+                if (bd.getBeanClassName() != null && bd.getBeanClassName().contains(".DefaultResponseMapper")) {
+                    this.defaultResponseMapperBeanDefinition = bd;
+                }
+                responseMapperBeanDefinitions.add(bd);
+            }
+        }
+        this.responseMapperBeanDefinitionSet = responseMapperBeanDefinitions;
     }
 
     /**
@@ -170,6 +189,7 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
 
             definition.getConstructorArgumentValues().addGenericArgumentValue(beanClassName);
             definition.getConstructorArgumentValues().addGenericArgumentValue(this.findHttpAgentBeanDefinition(beanClassName, classLoaders));
+            definition.getConstructorArgumentValues().addGenericArgumentValue(this.findResponseMapperBeanDefinition(beanClassName, classLoaders));
 
             definition.setBeanClass(RestClientProxyFactoryBean.class);
             definition.setAttribute(FACTORY_BEAN_OBJECT_TYPE, beanClassName);
@@ -185,27 +205,50 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
     }
 
     private BeanDefinition findHttpAgentBeanDefinition(String restClientBeanClassName, ClassLoader[] classLoaders) {
-        Class<? extends HttpAgent> httpAgentClazz = OkHttpAgent.class;
+        Class<? extends HttpAgent> httpAgentClass = OkHttpAgent.class;
         try {
-            httpAgentClazz = this.getMatchHttpAgent(restClientBeanClassName, classLoaders);
+            RestClient restClient = this.getRestClientAnnotation(restClientBeanClassName, classLoaders);
+            if ( restClient != null ) {
+                httpAgentClass = restClient.agent();
+            }
         } catch (ClassNotFoundException e) {
             log.error(e.getMessage());
             // ignore..
         }
 
-        Class<? extends HttpAgent> finalHttpAgentClazz = httpAgentClazz;
+        Class<? extends HttpAgent> finalHttpAgentClass = httpAgentClass;
         return this.httpAgentBeanDefinitionSet.stream().filter(httpAgentBeanDefinition ->
             httpAgentBeanDefinition != null
                     && httpAgentBeanDefinition.getBeanClassName() != null
-                    && httpAgentBeanDefinition.getBeanClassName().equals(finalHttpAgentClazz.getName())
+                    && httpAgentBeanDefinition.getBeanClassName().equals(finalHttpAgentClass.getName())
         ).findFirst().orElseGet(() -> this.defaultHttpAgentBeanDefinition);
     }
 
-    private Class<? extends HttpAgent> getMatchHttpAgent(String restClientBeanClassName, ClassLoader[] classLoaders) throws ClassNotFoundException {
-        if ( restClientBeanClassName == null || restClientBeanClassName.isBlank() ) {
-            return OkHttpAgent.class;
+    private BeanDefinition findResponseMapperBeanDefinition(String restClientBeanClassName, ClassLoader[] classLoaders) {
+        Class<? extends ResponseMapper> responseMapperClass = DefaultResponseMapper.class;
+        try {
+            RestClient restClient = this.getRestClientAnnotation(restClientBeanClassName, classLoaders);
+            if ( restClient != null ) {
+                responseMapperClass = restClient.mapper();
+            }
+        } catch (ClassNotFoundException e) {
+            log.error(e.getMessage());
+            // ignore..
         }
-        
+
+        Class<? extends ResponseMapper> finalResponseMapperClass = responseMapperClass;
+        return this.responseMapperBeanDefinitionSet.stream().filter(responseMapperBeanDefinition ->
+                responseMapperBeanDefinition != null
+                        && responseMapperBeanDefinition.getBeanClassName() != null
+                        && responseMapperBeanDefinition.getBeanClassName().equals(finalResponseMapperClass.getName())
+        ).findFirst().orElseGet(() -> this.defaultResponseMapperBeanDefinition);
+    }
+
+    private RestClient getRestClientAnnotation(String restClientBeanClassName, ClassLoader[] classLoaders) throws ClassNotFoundException {
+        if ( restClientBeanClassName == null || restClientBeanClassName.isBlank() ) {
+            return null;
+        }
+
         Class<?> restClientClazz = ClassUtil.classForName(restClientBeanClassName, classLoaders);
         Annotation restClientAnnotation = restClientClazz.getAnnotation(this.annotationClazz);
 
@@ -214,6 +257,6 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
             throw new RestClientCommonException("RestClient Bean 을 생성하는데 문제가 발생하였습니다.");
         }
 
-        return ((RestClient) restClientAnnotation).agent();
+        return (RestClient) restClientAnnotation;
     }
 }

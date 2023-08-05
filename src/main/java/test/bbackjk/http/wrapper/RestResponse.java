@@ -1,21 +1,23 @@
 package test.bbackjk.http.wrapper;
 
 import lombok.Getter;
-import test.bbackjk.http.util.RestUtils;
+import test.bbackjk.http.util.RestClientUtils;
 
 @Getter
 public class RestResponse {
     private final int httpCode;
     private final boolean success;
-    private final Object data;
+    private final String jsonString;
+    private final String message;
 
-    public RestResponse(int httpCode, Object data) {
-        this(httpCode, RestUtils.isSuccess(httpCode), data);
+    public RestResponse(int httpCode, String jsonString, String message) {
+        this(httpCode, RestClientUtils.isSuccess(httpCode), jsonString, message);
     }
 
-    public RestResponse(int httpCode, boolean success, Object data) {
+    public RestResponse(int httpCode, boolean success, String jsonString, String message) {
         this.httpCode = httpCode;
         this.success = success;
-        this.data = data;
+        this.jsonString = jsonString;
+        this.message = message;
     }
 }

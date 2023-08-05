@@ -3,11 +3,13 @@ package test.bbackjk.http.mapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Component;
 import test.bbackjk.http.exceptions.RestClientDataMappingException;
 import test.bbackjk.http.interfaces.ResponseMapper;
 
 import java.util.List;
 
+@Component
 public class DefaultResponseMapper implements ResponseMapper {
 
     private final ObjectMapper om;
