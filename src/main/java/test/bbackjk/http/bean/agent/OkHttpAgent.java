@@ -1,4 +1,4 @@
-package test.bbackjk.http.agent;
+package test.bbackjk.http.bean.agent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 import test.bbackjk.http.configuration.RestClientConnectProperties;
 import test.bbackjk.http.exceptions.RestClientCallException;
+import test.bbackjk.http.helper.LogHelper;
 import test.bbackjk.http.interfaces.HttpAgent;
 import test.bbackjk.http.util.Logs;
 import test.bbackjk.http.util.RestClientUtils;
@@ -65,7 +66,9 @@ public class OkHttpAgent implements HttpAgent {
                 .url(httpUrlBuilder.build());
         this.initHeaderValues(requestBuilder, requestMetadata.getHeaderValuesMap());
 
-        try (Response result = client.newCall(requestBuilder.build()).execute()) {
+        Request request = requestBuilder.build();
+        try (Response result = client.newCall(request).execute()) {
+            this.logging(result, requestMetadata.getRestClientLogger());
             ResponseBody responseBody = result.body();
             return new RestResponse(result.code(), responseBody == null ? "" : responseBody.string(), result.message());
         } catch (IOException e) {
@@ -140,6 +143,12 @@ public class OkHttpAgent implements HttpAgent {
 
     private MediaType parseMediaType(org.springframework.http.MediaType requestContentType) {
         return MediaType.parse(requestContentType.getType() + "/" + requestContentType.getSubtype());
+    }
+
+    private void logging(Response response, LogHelper logger) {
+        Request request = response.request();
+        logger.log("URL : {} {}", request.method(), request.url().url().toString());
+        request.headers().iterator().forEachRemaining(k -> logger.log("HEADER : {}, {}", k.component1(), k.component2()));
     }
 
     @Slf4j

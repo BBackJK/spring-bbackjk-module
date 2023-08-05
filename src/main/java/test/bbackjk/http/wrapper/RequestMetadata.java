@@ -4,6 +4,7 @@ package test.bbackjk.http.wrapper;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.http.MediaType;
+import test.bbackjk.http.helper.LogHelper;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -14,30 +15,25 @@ public class RequestMetadata {
     private final Map<String, String> headerValuesMap;
     private final Map<String, String> pathValuesMap;
     private final Map<String, String> queryValuesMap;
+    private final String url;
     @Nullable
     private final Object bodyData;
-    private final String url;
     @Nullable
     private final Object[] args;
 
-    public RequestMetadata(String url, MediaType mediaType) {
-        this.url = url;
-        this.contentType = mediaType;
-        this.headerValuesMap = new LinkedHashMap<>();
-        this.pathValuesMap = new LinkedHashMap<>();
-        this.queryValuesMap = new LinkedHashMap<>();
-        this.bodyData = null;
-        this.args = null;
+    private final LogHelper restClientLogger;
+
+    public RequestMetadata(String url, MediaType mediaType, LogHelper restClientLogger) {
+        this(url, mediaType, new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>(), null, null, restClientLogger);
     }
 
     public RequestMetadata(
-            String url
-            , MediaType mediaType
+            String url, MediaType mediaType
             , Map<String, String> headerValuesMap
             , Map<String, String> pathValuesMap
             , Map<String, String> queryValuesMap
-            , @Nullable Object bodyData
-            , @Nullable Object[] args
+            , @Nullable Object bodyData, @Nullable Object[] args
+            , LogHelper restClientLogger
     ) {
         this.url = url;
         this.contentType = mediaType;
@@ -46,10 +42,11 @@ public class RequestMetadata {
         this.queryValuesMap = queryValuesMap;
         this.bodyData = bodyData;
         this.args = args;
+        this.restClientLogger = restClientLogger;
     }
 
-    public static RequestMetadata ofEmpty(String origin, String pathname, MediaType mediaType) {
-        return new RequestMetadata(getFullUrl(origin, pathname), mediaType);
+    public static RequestMetadata ofEmpty(String origin, String pathname, MediaType mediaType, LogHelper restClientLogger) {
+        return new RequestMetadata(getFullUrl(origin, pathname), mediaType, restClientLogger);
     }
 
     public static RequestMetadata of(
@@ -57,10 +54,10 @@ public class RequestMetadata {
             , Map<String, String> headerValuesMap
             , Map<String, String> pathValuesMap
             , Map<String, String> queryValuesMap
-            , Object bodyData
-            , Object[] args
+            , Object bodyData, Object[] args
+            , LogHelper restClientLogger
     ) {
-        return new RequestMetadata(getFullUrl(origin, pathname), mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args);
+        return new RequestMetadata(getFullUrl(origin, pathname), mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger);
     }
 
     private static String getFullUrl(String origin, String pathname) {

@@ -1,4 +1,4 @@
-package test.bbackjk.http.agent;
+package test.bbackjk.http.bean.agent;
 
 import org.springframework.stereotype.Component;
 import test.bbackjk.http.configuration.RestClientConnectProperties;

@@ -17,13 +17,13 @@ import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.Assert;
-import test.bbackjk.http.agent.OkHttpAgent;
+import test.bbackjk.http.bean.agent.OkHttpAgent;
 import test.bbackjk.http.annotations.RestClient;
 import test.bbackjk.http.bean.RestClientProxyFactoryBean;
 import test.bbackjk.http.exceptions.RestClientCommonException;
 import test.bbackjk.http.interfaces.HttpAgent;
 import test.bbackjk.http.interfaces.ResponseMapper;
-import test.bbackjk.http.mapper.DefaultResponseMapper;
+import test.bbackjk.http.bean.mapper.DefaultResponseMapper;
 import test.bbackjk.http.util.BeansUtil;
 import test.bbackjk.http.util.ClassUtil;
 

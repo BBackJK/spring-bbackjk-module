@@ -1,10 +1,10 @@
 package test.bbackjk.http.annotations;
 
 import org.springframework.core.annotation.AliasFor;
-import test.bbackjk.http.agent.OkHttpAgent;
+import test.bbackjk.http.bean.agent.OkHttpAgent;
 import test.bbackjk.http.interfaces.HttpAgent;
 import test.bbackjk.http.interfaces.ResponseMapper;
-import test.bbackjk.http.mapper.DefaultResponseMapper;
+import test.bbackjk.http.bean.mapper.DefaultResponseMapper;
 
 import java.lang.annotation.*;
 
@@ -13,10 +13,10 @@ import java.lang.annotation.*;
 @Documented
 public @interface RestClient {
 
-    @AliasFor("subject")
+    @AliasFor("context")
     String value() default "";
     @AliasFor("value")
-    String subject() default "";
+    String context() default "";
     String url() default "";
 
     Class<? extends HttpAgent> agent() default OkHttpAgent.class;

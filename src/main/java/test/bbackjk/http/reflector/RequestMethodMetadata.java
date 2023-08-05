@@ -1,11 +1,11 @@
 package test.bbackjk.http.reflector;
 
-import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.util.MethodInvoker;
 import org.springframework.web.bind.annotation.*;
 import test.bbackjk.http.exceptions.RestClientCallException;
+import test.bbackjk.http.helper.LogHelper;
 import test.bbackjk.http.util.ClassUtil;
 import test.bbackjk.http.util.ReflectorUtils;
 import test.bbackjk.http.wrapper.RequestMetadata;
@@ -19,9 +19,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Slf4j
 class RequestMethodMetadata {
-    private static final Pattern PATH_VARIABLE_PATTERN = Pattern.compile("\\{[a-z-]+}");
+    private static final Pattern PATH_VARIABLE_PATTERN = Pattern.compile("\\{[a-z|0-9]+}");
     private final boolean hasRequestParamAnnotation;
     private final boolean canHasRequestBody;
     private final boolean isFormContent;
@@ -30,8 +29,9 @@ class RequestMethodMetadata {
     private final Map<Integer, String> headerValuesFrame;
     private final Map<Integer, String> pathValuesFrame;
     private final Map<Integer, String> queryValuesFrame;
+    private final LogHelper restClientLogger;
     
-    public RequestMethodMetadata(RestClientMethodInvoker m) {
+    public RequestMethodMetadata(RestClientMethodInvoker m, LogHelper restClientLogger) {
         Method method = m.getMethod();
         this.hasRequestParamAnnotation = this.hasRequestParamByMethod(method.getParameterAnnotations());
         this.canHasRequestBody = this.checkHasRequestBody(m.getRequestMethod());
@@ -42,11 +42,12 @@ class RequestMethodMetadata {
         this.headerValuesFrame = this.getHeaderValuesFrame(method.getParameters());
         this.pathValuesFrame = this.getPathValuesFrame(method.getParameters());
         this.queryValuesFrame = this.getQueryValuesFrame(method);
+        this.restClientLogger = restClientLogger;
     }
 
     public RequestMetadata applyArgs(String origin, String pathname, MediaType mediaType, Object[] args) {
         if ( args == null || args.length == 0 ) {
-            return RequestMetadata.ofEmpty(origin, pathname, mediaType);
+            return RequestMetadata.ofEmpty(origin, pathname, mediaType, this.restClientLogger);
         }
 
         Map<String, String> headerValuesMap = new LinkedHashMap<>();
@@ -60,9 +61,9 @@ class RequestMethodMetadata {
             Object arg = args[i];
             if ( arg == null ) {
                 if (this.headerValuesFrame.containsKey(i)) {
-                    headerValuesMap.put(this.headerValuesFrame.get(i), null);
+                    throw new RestClientCallException(" @RequestHeader 값은 Null 이 될 수 없습니다. ");
                 } else if (this.pathValuesFrame.containsKey(i)) {
-                    pathValuesMap.put(this.pathValuesFrame.get(i), null);
+                    throw new RestClientCallException(" @PathVariable 값은 Null 이 될 수 없습니다. ");
                 } else if (this.queryValuesFrame.containsKey(i)) {
                     queryValuesMap.put(this.pathValuesFrame.get(i), null);
                 } else {
@@ -103,7 +104,7 @@ class RequestMethodMetadata {
                                 queryValuesMap.put(fieldName, value == null ? null : String.valueOf(value));
                             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
                                      IllegalAccessException e) {
-                                log.error(e.getMessage());
+                                this.restClientLogger.err(e.getMessage());
                                 throw new RestClientCallException(String.format("해당 필드에 대한 Getter 메소드가 존재하지 않습니다. %s", fieldName));
                             }
                         }
@@ -135,7 +136,7 @@ class RequestMethodMetadata {
         }
 
         return RequestMetadata.of(
-                origin, pathname, mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args
+                origin, pathname, mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger
         );
     }
 
@@ -227,13 +228,11 @@ class RequestMethodMetadata {
         for (int i=0; i<paramCount; i++) {
             Parameter param = parameters[i];
             PathVariable pathVariable = param.getAnnotation(PathVariable.class);
-            boolean hasPathVariableAnnotation = pathVariable != null; // parameter 가 PathVariable 어노테이션을 가지고 있는지
-            boolean isPathVal = this.pathVariableNames.contains(param.getName()); // parameter 의 인자명이 pathVariableNames 에 포함하는지
+            if ( pathVariable == null ) continue;
+            String paramName = param.getName();
 
-            if ( !hasPathVariableAnnotation && !isPathVal ) continue;
-
-            String paramName = hasPathVariableAnnotation ? this.getParamNameByAnnotation(pathVariable) : null;
-            result.put(i, paramName == null ? param.getName() : paramName);
+            String annotationParamName = this.getParamNameByAnnotation(pathVariable);
+            result.put(i, annotationParamName == null ? paramName : annotationParamName);
         }
 
         return result;

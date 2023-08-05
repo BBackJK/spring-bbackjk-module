@@ -1,7 +1,7 @@
 package test.bbackjk.http.sample.http;
 
 import org.springframework.web.bind.annotation.GetMapping;
-import test.bbackjk.http.agent.RestTemplateAgent;
+import test.bbackjk.http.bean.agent.RestTemplateAgent;
 import test.bbackjk.http.annotations.RestClient;
 
 @RestClient(url = "http://localhost:8080", agent = RestTemplateAgent.class)

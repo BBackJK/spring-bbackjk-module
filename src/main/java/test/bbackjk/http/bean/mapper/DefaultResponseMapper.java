@@ -1,4 +1,4 @@
-package test.bbackjk.http.mapper;
+package test.bbackjk.http.bean.mapper;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

@@ -1,11 +1,11 @@
 package test.bbackjk.http.reflector;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import test.bbackjk.http.exceptions.RestClientCallException;
+import test.bbackjk.http.helper.LogHelper;
 import test.bbackjk.http.interfaces.HttpAgent;
 import test.bbackjk.http.util.ReflectorUtils;
 import test.bbackjk.http.wrapper.RestResponse;
@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Slf4j
 public class RestClientMethodInvoker {
 
     private static final List<Class<? extends Annotation>> ALLOWED_REQUEST_MAPPING_ANNOTATIONS;
@@ -36,6 +35,8 @@ public class RestClientMethodInvoker {
     private final RequestReturnResolver requestReturnResolver;
     private final RequestMethodMetadata requestMethodMetadata;
 
+    private final LogHelper logger = LogHelper.of(this.getClass());
+
     static {
         ALLOWED_REQUEST_MAPPING_ANNOTATIONS = Stream.of(
                 RequestMapping.class, GetMapping.class, PostMapping.class
@@ -43,15 +44,14 @@ public class RestClientMethodInvoker {
         ).collect(Collectors.toUnmodifiableList());
     }
 
-    public RestClientMethodInvoker(Method method) {
+    public RestClientMethodInvoker(Method method, LogHelper restClientLogger) {
         this.method = method;
         Annotation httpMappingAnnotation = this.parseRequestAnnotationByMethod(method);
         this.requestMethod = this.parseRequestMethodByAnnotation(httpMappingAnnotation);
         this.requestPathname = this.parseRequestUrlByAnnotation(httpMappingAnnotation);
         this.contentType = this.parseContentTypeByAnnotation(httpMappingAnnotation);
         this.requestReturnResolver = new RequestReturnResolver(method);
-        this.requestMethodMetadata = new RequestMethodMetadata(this);
-
+        this.requestMethodMetadata = new RequestMethodMetadata(this, restClientLogger);
     }
 
     public RestResponse invoke(String origin, HttpAgent httpAgent, Object[] args) throws RestClientCallException {
@@ -149,7 +149,7 @@ public class RestClientMethodInvoker {
         try {
             return new MediaType(contentTypeSplit[0], contentTypeSplit[1]);
         } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
-            log.warn("Annotation 으로부터 contentType 을 파싱하다 실패하였습니다. 원인 :: {}", e.getMessage());
+            this.logger.warn("Annotation 으로부터 contentType 을 파싱하다 실패하였습니다. 원인 :: {}", e.getMessage());
             return defaultContentType;
         }
     }
