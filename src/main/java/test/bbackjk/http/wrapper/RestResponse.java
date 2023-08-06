@@ -1,23 +1,70 @@
 package test.bbackjk.http.wrapper;
 
+
 import lombok.Getter;
-import test.bbackjk.http.util.RestClientUtils;
+import test.bbackjk.http.funtional.MultiConsumer;
+
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Getter
-public class RestResponse {
-    private final int httpCode;
+public class RestResponse<T> {
+
+    private final T data;
     private final boolean success;
-    private final String jsonString;
+    private final int httpCode;
     private final String message;
 
-    public RestResponse(int httpCode, String jsonString, String message) {
-        this(httpCode, RestClientUtils.isSuccess(httpCode), jsonString, message);
+
+    public RestResponse(T data, boolean success, int httpCode, String message) {
+        this.data = data;
+        this.success = success;
+        this.httpCode = httpCode;
+        this.message = message;
     }
 
-    public RestResponse(int httpCode, boolean success, String jsonString, String message) {
-        this.httpCode = httpCode;
-        this.success = success;
-        this.jsonString = jsonString;
-        this.message = message;
+    public static <T> RestResponse<T> success(T data, int httpCode) {
+        return new RestResponse<>(data, true, httpCode, "");
+    }
+
+    public static <T> RestResponse<T> fail(int httpCode, String message) {
+        return new RestResponse<>(null, false, httpCode, message);
+    }
+
+    public RestResponse<T> ifSuccess(Consumer<T> consumer) {
+        if ( this.success ) {
+            consumer.accept(this.data);
+        }
+        return this;
+    }
+
+    public RestResponse<T> ifFailure(MultiConsumer<Integer, String> consumer) {
+        if ( !this.success ) {
+            consumer.accept(this.httpCode, this.message);
+        }
+        return this;
+    }
+
+    public <R extends T> Optional<R> ifSuccess(Function<T, R> function) {
+        if ( this.success ) {
+            return Optional.ofNullable(function.apply(this.data));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public RestResponse<T> ifSuccess(Runnable runnable) {
+        if ( this.success ) {
+            runnable.run();
+        }
+        return this;
+    }
+
+    public RestResponse<T> ifFailure(Runnable runnable) {
+        if ( !this.success ) {
+            runnable.run();
+        }
+        return this;
     }
 }

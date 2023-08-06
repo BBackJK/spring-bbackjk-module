@@ -1,7 +1,6 @@
 package test.bbackjk.http.spring;
 
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanNameAware;
@@ -25,8 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-@Slf4j
-//@Getter
 @Setter
 public class RestClientScannerConfigurer implements InitializingBean, ApplicationContextAware, BeanNameAware, BeanDefinitionRegistryPostProcessor {
 
@@ -48,6 +45,7 @@ public class RestClientScannerConfigurer implements InitializingBean, Applicatio
     @Override // BeanDefinitionRegistryPostProcessor 의 implements
     public void postProcessBeanDefinitionRegistry(@NotNull BeanDefinitionRegistry registry) throws BeansException {
         ClassPathRestClientScanner scanner = new ClassPathRestClientScanner(registry);
+        scanner.setBasePackage(this.basePackage);
         scanner.setAnnotationClazz(this.annotationClazz);
         scanner.setHttpAgentBeanList(this.applicationContext.getBeanNamesForType(HttpAgent.class));
         scanner.setResponseMapperBeanDefinitionSet(this.applicationContext.getBeanNamesForType(ResponseMapper.class));

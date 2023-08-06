@@ -1,5 +1,7 @@
 package test.bbackjk.http.sample.service;
 
+import test.bbackjk.http.sample.dto.MemberDto;
+
 public interface RestService {
 
     String basic();
@@ -9,4 +11,13 @@ public interface RestService {
     String query3();
     String query4();
     String query5();
+
+
+
+    String post1();
+    String post2();
+    MemberDto post3();
+    MemberDto post31();
+
+    MemberDto post4();
 }

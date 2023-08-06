@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import test.bbackjk.http.sample.dto.MemberDto;
 import test.bbackjk.http.sample.service.RestService;
 
 
@@ -46,5 +47,31 @@ public class TestRequestController {
     @GetMapping("/api/v1/query5")
     ResponseEntity<String> query5() {
         return ResponseEntity.ok(restService.query5());
+    }
+
+    @GetMapping("/api/v1/hello/post1")
+    ResponseEntity<String> post1() {
+        return ResponseEntity.ok(restService.post1());
+    }
+
+
+    @GetMapping("/api/v1/hello/post2")
+    ResponseEntity<String> post2() {
+        return ResponseEntity.ok(restService.post2());
+    }
+
+    @GetMapping("/api/v1/hello/post3")
+    ResponseEntity<MemberDto> post3() {
+        return ResponseEntity.ok(restService.post3());
+    }
+
+    @GetMapping("/api/v1/hello/post31")
+    ResponseEntity<MemberDto> post31() {
+        return ResponseEntity.ok(restService.post31());
+    }
+
+    @GetMapping("/api/v1/hello/post4")
+    ResponseEntity<MemberDto> post4() {
+        return ResponseEntity.ok(restService.post4());
     }
 }

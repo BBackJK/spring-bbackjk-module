@@ -20,12 +20,7 @@ public class RequestMetadata {
     private final Object bodyData;
     @Nullable
     private final Object[] args;
-
     private final LogHelper restClientLogger;
-
-    public RequestMetadata(String url, MediaType mediaType, LogHelper restClientLogger) {
-        this(url, mediaType, new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>(), null, null, restClientLogger);
-    }
 
     public RequestMetadata(
             String url, MediaType mediaType
@@ -45,6 +40,10 @@ public class RequestMetadata {
         this.restClientLogger = restClientLogger;
     }
 
+    public RequestMetadata(String url, MediaType mediaType, LogHelper restClientLogger) {
+        this(url, mediaType, new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>(), null, null, restClientLogger);
+    }
+
     public static RequestMetadata ofEmpty(String origin, String pathname, MediaType mediaType, LogHelper restClientLogger) {
         return new RequestMetadata(getFullUrl(origin, pathname), mediaType, restClientLogger);
     }
@@ -58,6 +57,18 @@ public class RequestMetadata {
             , LogHelper restClientLogger
     ) {
         return new RequestMetadata(getFullUrl(origin, pathname), mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger);
+    }
+
+    public boolean isXmlContent() {
+        return MediaType.APPLICATION_XML.equalsTypeAndSubtype(this.contentType);
+    }
+
+    public boolean isFormContent() {
+        return MediaType.APPLICATION_FORM_URLENCODED.equalsTypeAndSubtype(this.contentType);
+    }
+
+    public boolean isJsonContent() {
+        return MediaType.APPLICATION_JSON.equalsTypeAndSubtype(this.contentType);
     }
 
     private static String getFullUrl(String origin, String pathname) {

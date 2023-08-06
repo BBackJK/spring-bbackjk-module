@@ -8,7 +8,7 @@ import test.bbackjk.http.exceptions.RestClientCallException;
 import test.bbackjk.http.helper.LogHelper;
 import test.bbackjk.http.interfaces.HttpAgent;
 import test.bbackjk.http.util.ReflectorUtils;
-import test.bbackjk.http.wrapper.RestResponse;
+import test.bbackjk.http.wrapper.RestCommonResponse;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -22,7 +22,6 @@ public class RestClientMethodInvoker {
     private static final String ANNO_METHOD_NAME_METHOD = "method";
     private static final String ANNO_METHOD_NAME_VALUE = "value";
     private static final String ANNO_METHOD_NAME_CONSUMES = "consumes";
-
     @Getter
     private final Method method;
     @Getter
@@ -34,7 +33,6 @@ public class RestClientMethodInvoker {
     @Getter
     private final RequestReturnResolver requestReturnResolver;
     private final RequestMethodMetadata requestMethodMetadata;
-
     private final LogHelper logger = LogHelper.of(this.getClass());
 
     static {
@@ -44,18 +42,18 @@ public class RestClientMethodInvoker {
         ).collect(Collectors.toUnmodifiableList());
     }
 
-    public RestClientMethodInvoker(Method method, LogHelper restClientLogger) {
+    public RestClientMethodInvoker(Method method, LogHelper restClientLogger, Class<?> restClientInterface) {
         this.method = method;
         Annotation httpMappingAnnotation = this.parseRequestAnnotationByMethod(method);
         this.requestMethod = this.parseRequestMethodByAnnotation(httpMappingAnnotation);
         this.requestPathname = this.parseRequestUrlByAnnotation(httpMappingAnnotation);
         this.contentType = this.parseContentTypeByAnnotation(httpMappingAnnotation);
         this.requestReturnResolver = new RequestReturnResolver(method);
-        this.requestMethodMetadata = new RequestMethodMetadata(this, restClientLogger);
+        this.requestMethodMetadata = new RequestMethodMetadata(this, restClientLogger, restClientInterface);
     }
 
-    public RestResponse invoke(String origin, HttpAgent httpAgent, Object[] args) throws RestClientCallException {
-        RestResponse result;
+    public RestCommonResponse invoke(String origin, HttpAgent httpAgent, Object[] args) throws RestClientCallException {
+        RestCommonResponse result;
 
         switch (this.requestMethod) {
             case GET:
@@ -86,6 +84,10 @@ public class RestClientMethodInvoker {
 
     public boolean isFormContent() {
         return MediaType.APPLICATION_FORM_URLENCODED.equalsTypeAndSubtype(this.contentType);
+    }
+
+    public boolean hasRestCallbackArgument() {
+        return this.requestMethodMetadata.hasRestCallback();
     }
 
     @Nullable

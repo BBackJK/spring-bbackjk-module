@@ -1,11 +1,13 @@
 package test.bbackjk.http.reflector;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.util.MethodInvoker;
 import org.springframework.web.bind.annotation.*;
 import test.bbackjk.http.exceptions.RestClientCallException;
 import test.bbackjk.http.helper.LogHelper;
+import test.bbackjk.http.helper.RestCallback;
 import test.bbackjk.http.util.ClassUtil;
 import test.bbackjk.http.util.ReflectorUtils;
 import test.bbackjk.http.wrapper.RequestMetadata;
@@ -21,17 +23,21 @@ import java.util.regex.Pattern;
 
 class RequestMethodMetadata {
     private static final Pattern PATH_VARIABLE_PATTERN = Pattern.compile("\\{[a-z|0-9]+}");
+    private final Class<?> restClientInterface;
     private final boolean hasRequestParamAnnotation;
     private final boolean canHasRequestBody;
     private final boolean isFormContent;
     private final boolean hasPathVariable;
+    private final List<Parameter> restCallbackList;
     private final List<String> pathVariableNames;
     private final Map<Integer, String> headerValuesFrame;
     private final Map<Integer, String> pathValuesFrame;
     private final Map<Integer, String> queryValuesFrame;
     private final LogHelper restClientLogger;
+    private final LogHelper logger = LogHelper.of(getClass());
     
-    public RequestMethodMetadata(RestClientMethodInvoker m, LogHelper restClientLogger) {
+    public RequestMethodMetadata(RestClientMethodInvoker m, LogHelper restClientLogger, Class<?> restClientInterface) {
+        this.restClientInterface = restClientInterface;
         Method method = m.getMethod();
         this.hasRequestParamAnnotation = this.hasRequestParamByMethod(method.getParameterAnnotations());
         this.canHasRequestBody = this.checkHasRequestBody(m.getRequestMethod());
@@ -39,10 +45,13 @@ class RequestMethodMetadata {
         this.hasPathVariable = this.checkHasPathVariable(m.getRequestPathname());
         this.pathVariableNames = this.getPathVariableNames(m.getRequestPathname());
 
+        this.restCallbackList = this.getRestCallbackList(method.getParameters());
         this.headerValuesFrame = this.getHeaderValuesFrame(method.getParameters());
         this.pathValuesFrame = this.getPathValuesFrame(method.getParameters());
         this.queryValuesFrame = this.getQueryValuesFrame(method);
         this.restClientLogger = restClientLogger;
+
+        this.validationMethodParameters(method);
     }
 
     public RequestMetadata applyArgs(String origin, String pathname, MediaType mediaType, Object[] args) {
@@ -68,9 +77,6 @@ class RequestMethodMetadata {
                     queryValuesMap.put(this.pathValuesFrame.get(i), null);
                 } else {
                     bodyDataCount++;
-                    if ( bodyDataCount > 1 ) {
-                        throw new RestClientCallException(String.format("@RequestBody 어노테이션은 2개 이상 있을 수 없습니다. 첫번째 argument :: %s, 두번째 argument :: %s", bodyData, arg));
-                    }
                 }
             } else {
                 if (this.headerValuesFrame.containsKey(i)) {
@@ -78,7 +84,6 @@ class RequestMethodMetadata {
                 } else if (this.pathValuesFrame.containsKey(i)) {
                     pathValuesMap.put(this.pathValuesFrame.get(i), String.valueOf(arg));
                 } else if (this.queryValuesFrame.containsKey(i)) {
-
                     // List 형태로는 올 수가 없다.
                     if ( arg instanceof Collection ) {
                         throw new RestClientCallException(" 파라미터는 List 가 올 수 없습니다. ");
@@ -111,6 +116,8 @@ class RequestMethodMetadata {
                     } else { // 일반 primitive, String 인 경우
                         queryValuesMap.put(this.queryValuesFrame.get(i), String.valueOf(arg));
                     }
+                } else if (arg instanceof RestCallback) {
+                    // ignore
                 } else {
                     bodyDataCount++;
                     if ( bodyDataCount > 1 ) {
@@ -138,6 +145,10 @@ class RequestMethodMetadata {
         return RequestMetadata.of(
                 origin, pathname, mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger
         );
+    }
+
+    public boolean hasRestCallback() {
+        return !this.restCallbackList.isEmpty();
     }
 
     /**
@@ -189,6 +200,18 @@ class RequestMethodMetadata {
         while (matcher.find()) {
             String values = matcher.group(); // "{values}"
             result.add(values.substring(1, values.length()-1)); // "values"
+        }
+        return result;
+    }
+
+    private List<Parameter> getRestCallbackList(Parameter[] parameters) {
+        List<Parameter> result = new ArrayList<>();
+        int paramCount = parameters.length;
+        for (int i=0; i<paramCount; i++) {
+            Parameter param = parameters[i];
+            if ( param.getAnnotations().length == 0 && RestCallback.class.equals(param.getType())) {
+                result.add(param);
+            }
         }
         return result;
     }
@@ -332,7 +355,11 @@ class RequestMethodMetadata {
         for (int i=0;i<paramCount;i++) {
             Parameter param = parameters[i];
             String paramName = param.getName();
-            if ( param.getAnnotations().length == 0 && !this.pathVariableNames.contains(paramName) ) {
+            if (
+                    param.getAnnotations().length == 0 &&
+                    !this.pathVariableNames.contains(paramName) &&
+                    !this.restCallbackList.contains(param)
+            ) {
                 result.put(i, paramName == null ? param.getName() : paramName);
             }
         }
@@ -353,5 +380,84 @@ class RequestMethodMetadata {
             result = value;
         }
         return result;
+    }
+
+    /**
+     * 설정 후 유효성 체크
+     * 1. RequestBody 수 체크
+     * 2. Parameter 중 타입이 List 인 것들을 확인.
+     * 3. Parameter 중 Query Value 의 타입이 Primitive 와 String 이 아닌 경우 getter 는 필수.
+     */
+    private void validationMethodParameters(Method m) {
+        if ( m == null || m.getParameters() == null ) {
+            return;
+        }
+        // 1. RequestBody 수 체크
+        this.checkRequestBodyCountValid(m);
+
+        // 2. Parameter 중 타입이 List 인 것들을 확인.
+        // 3. Parameter 중 Query Value 의 타입이 Primitive 와 String 이 아닌 경우 getter 는 필수.
+        this.checkListParamValid(m);
+    }
+
+    private void checkRequestBodyCountValid(@NotNull Method m) {
+        Parameter[] parameters = m.getParameters();
+        int paramCount = parameters.length;
+        int headerValueSize = this.headerValuesFrame.size();
+        int pathValueSize = this.pathValuesFrame.size();
+        int queryValueSize = this.queryValuesFrame.size();
+        int restCallbackSize = this.restCallbackList.size();
+
+        int totalFoundedParamCount = headerValueSize + pathValueSize + queryValueSize;
+
+        int requestBodyCount = paramCount - totalFoundedParamCount - restCallbackSize;
+
+        // RequestBody 를 가질 수 있으면.
+        if ( this.canHasRequestBody ) {
+            if ( requestBodyCount != 1 ) {
+                throw new RestClientCallException(String.format("[%s#%s] POST, PUT, PATCH RequestMethod 는 MediaType 이 application/json 일 경우, RequestBody 1개는 필수 이여야 합니다. RequestBody 수 %d", this.restClientInterface.getSimpleName(), m.getName(), requestBodyCount));
+            }
+        } else {
+            if ( requestBodyCount > 0 ) {
+                StringBuilder errMessage = new StringBuilder(String.format("[%s#%s] RequestBody 를 가질 수 없는 Method 입니다.", this.restClientInterface.getSimpleName(), m.getName()));
+                int initPathVariableSize = this.pathVariableNames.size();
+                if ( this.hasPathVariable && (initPathVariableSize != pathValueSize) ) {
+                    errMessage.append("\n");
+                    errMessage.append(" - PathVariable 을 Url 에 선언한 경우, @PathVariable 어노테이션은 필수 입니다.");
+                }
+                if ( this.hasRequestParamAnnotation ) {
+                    errMessage.append("\n");
+                    errMessage.append(" - RequestParam 어노테이션을 선언한 경우, Get Method 혹은 Delete 메소드는 선언되어 있지 않은 파라미터에 대해서 RequestBody 로 취급합니다.");
+                }
+                throw new RestClientCallException(errMessage.toString());
+            }
+        }
+    }
+
+    private void checkListParamValid(@NotNull Method m) {
+        Parameter[] parameters = m.getParameters();
+        int paramCount = parameters.length;
+        boolean hasQueryValue = this.queryValuesFrame.size() > 0;
+        for (int i=0; i<paramCount; i++) {
+            Parameter param = parameters[i];
+            Class<?> paramClass = param.getType();
+            boolean isList = paramClass.isAssignableFrom(List.class);
+            boolean isMap = paramClass.isAssignableFrom(Map.class);
+            boolean isPrimitiveInString = ClassUtil.isPrimitiveInString(paramClass);
+
+            if ( isList ) {
+                throw new RestClientCallException(String.format("[%s#%s] RestClient 는 List 타입의 파라미터를 지원하지 않습니다.", this.restClientInterface.getSimpleName(), m.getName()));
+            }
+
+            if ( hasQueryValue && this.queryValuesFrame.containsKey(i) && !isMap && !isPrimitiveInString ) {
+                for ( Field x : paramClass.getDeclaredFields()) {
+                    try {
+                        paramClass.getMethod(ClassUtil.getGetterMethodByField(x));
+                    } catch (NoSuchMethodException e) {
+                        throw new RestClientCallException(String.format("[%s#%s] RestClient 에서 Reference 타입의 파라미터는 Getter 메소드는 필수입니다.", this.restClientInterface.getSimpleName(), m.getName()));
+                    }
+                }
+            }
+        }
     }
 }

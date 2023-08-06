@@ -61,7 +61,7 @@ public class ClassUtil extends org.springframework.util.ClassUtils {
     }
 
     public boolean isPrimitiveInString(Class<?> clazz) {
-        return clazz != null && (isPrimitiveOrWrapper(clazz) || "String".equals(clazz.getSimpleName()));
+        return clazz != null && (isPrimitiveOrWrapper(clazz) || String.class.equals(clazz));
     }
 
     public Class<?> classForName(String name, ClassLoader[] classLoaders) throws ClassNotFoundException {

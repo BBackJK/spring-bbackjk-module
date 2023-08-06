@@ -4,18 +4,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import org.jetbrains.annotations.NotNull;
+import okio.Buffer;
 import org.springframework.stereotype.Component;
 import test.bbackjk.http.configuration.RestClientConnectProperties;
 import test.bbackjk.http.exceptions.RestClientCallException;
 import test.bbackjk.http.helper.LogHelper;
 import test.bbackjk.http.interfaces.HttpAgent;
-import test.bbackjk.http.util.Logs;
 import test.bbackjk.http.util.RestClientUtils;
 import test.bbackjk.http.wrapper.RequestMetadata;
-import test.bbackjk.http.wrapper.RestResponse;
+import test.bbackjk.http.wrapper.RestCommonResponse;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,13 +23,14 @@ import java.util.concurrent.TimeUnit;
 
 
 @Component
+@Slf4j
 public class OkHttpAgent implements HttpAgent {
     private final OkHttpClient client;
     private final ObjectMapper om;
 
     public OkHttpAgent(RestClientConnectProperties connectProperties) {
         OkHttpClient.Builder okHttpBuilder = new OkHttpClient.Builder();
-        okHttpBuilder.addInterceptor(new OkHttpInterceptor());
+//        okHttpBuilder.addInterceptor(new OkHttpInterceptor());
 
         Duration timeout = Duration.ofSeconds(connectProperties.getTimout());
 
@@ -56,7 +57,7 @@ public class OkHttpAgent implements HttpAgent {
 
 
     @Override
-    public RestResponse doGet(RequestMetadata requestMetadata) throws RestClientCallException {
+    public RestCommonResponse doGet(RequestMetadata requestMetadata) throws RestClientCallException {
         String url = RestClientUtils.getParseUrl(requestMetadata);
 
         HttpUrl.Builder httpUrlBuilder = HttpUrl.get(url).newBuilder();
@@ -70,14 +71,14 @@ public class OkHttpAgent implements HttpAgent {
         try (Response result = client.newCall(request).execute()) {
             this.logging(result, requestMetadata.getRestClientLogger());
             ResponseBody responseBody = result.body();
-            return new RestResponse(result.code(), responseBody == null ? "" : responseBody.string(), result.message());
+            return new RestCommonResponse(result.code(), responseBody == null ? "" : responseBody.string(), this.om);
         } catch (IOException e) {
             throw new RestClientCallException(e);
         }
     }
 
     @Override
-    public RestResponse doPost(RequestMetadata requestMetadata) throws RestClientCallException {
+    public RestCommonResponse doPost(RequestMetadata requestMetadata) throws RestClientCallException {
         RequestBody requestBody = null;
 
         try {
@@ -96,25 +97,27 @@ public class OkHttpAgent implements HttpAgent {
         this.initHeaderValues(requestBuilder, requestMetadata.getHeaderValuesMap());
 
         try (Response result = client.newCall(requestBuilder.build()).execute()) {
+            this.logging(result, requestMetadata.getRestClientLogger());
             ResponseBody responseBody = result.body();
-            return new RestResponse(result.code(), responseBody == null ? "" : responseBody.string(), result.message());
+            String bodyString = responseBody == null ? "" :responseBody.string();
+            return new RestCommonResponse(result.code(), bodyString, this.om);
         } catch (IOException e) {
             throw new RestClientCallException(e);
         }
     }
 
     @Override
-    public RestResponse doPatch(RequestMetadata requestMetadata) throws RestClientCallException {
+    public RestCommonResponse doPatch(RequestMetadata requestMetadata) throws RestClientCallException {
         return null;
     }
 
     @Override
-    public RestResponse doPut(RequestMetadata requestMetadata) throws RestClientCallException {
+    public RestCommonResponse doPut(RequestMetadata requestMetadata) throws RestClientCallException {
         return null;
     }
 
     @Override
-    public RestResponse doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
+    public RestCommonResponse doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
         return null;
     }
 
@@ -135,10 +138,19 @@ public class OkHttpAgent implements HttpAgent {
     }
 
     private RequestBody getRequestBody(RequestMetadata requestMetadata) throws JsonProcessingException {
-        return RequestBody.create(
-                om.writeValueAsString(requestMetadata.getBodyData() == null ? new HashMap<>() : requestMetadata.getBodyData())
-                , this.parseMediaType(requestMetadata.getContentType())
-        );
+        if ( requestMetadata.isFormContent() ) {
+            Map<?, ?> map = requestMetadata.getBodyData() == null
+                    ? new HashMap<>()
+                    : om.convertValue(requestMetadata.getBodyData(), Map.class);
+            FormBody.Builder builder = new FormBody.Builder();
+            map.forEach((k, v) -> builder.add(String.valueOf(k), String.valueOf(v)));
+            return builder.build();
+        } else {
+            return RequestBody.create(
+                    om.writeValueAsString(requestMetadata.getBodyData() == null ? new HashMap<>() : requestMetadata.getBodyData())
+                    , this.parseMediaType(requestMetadata.getContentType())
+            );
+        }
     }
 
     private MediaType parseMediaType(org.springframework.http.MediaType requestContentType) {
@@ -147,33 +159,18 @@ public class OkHttpAgent implements HttpAgent {
 
     private void logging(Response response, LogHelper logger) {
         Request request = response.request();
-        logger.log("URL : {} {}", request.method(), request.url().url().toString());
-        request.headers().iterator().forEachRemaining(k -> logger.log("HEADER : {}, {}", k.component1(), k.component2()));
-    }
 
-    @Slf4j
-    private static class OkHttpInterceptor implements Interceptor {
+        logger.log("Url          : {} {} {} ms", request.method(), request.url().url().toString(), response.receivedResponseAtMillis() - response.sentRequestAtMillis());
+        request.headers().iterator().forEachRemaining(k -> logger.log("Header       : {}, {}", k.component1(), k.component2()));
 
-        @NotNull
-        @Override
-        public Response intercept(@NotNull Chain chain) throws IOException {
-            Request request = chain.request();
-
-            long t1 = System.nanoTime();
-            String sendingMessage = String.format("Sending request %s on %s%n%s",
-                    request.url(), chain.connection(), request.headers());
-
-            Logs.log(sendingMessage);
-
-            Response response = chain.proceed(request);
-
-            long t2 = System.nanoTime();
-            String receivedMessage = String.format("Received response for %s in %.1fms%n%s",
-                    response.request().url(), (t2 - t1) / 1e6d, response.headers());
-
-            Logs.log(receivedMessage);
-
-            return response;
+        if (request.body() != null) {
+            try (Buffer bf = new Buffer()) {
+                request.body().writeTo(bf);
+                logger.log("Body         : {}", bf.readString(Charset.defaultCharset()));
+                logger.log("Content-Type : {}", request.body().contentType());
+            } catch (IOException e) {
+                logger.err(e.getMessage());
+            }
         }
     }
 }

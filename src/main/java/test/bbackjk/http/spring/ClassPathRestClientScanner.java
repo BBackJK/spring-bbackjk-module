@@ -1,6 +1,5 @@
 package test.bbackjk.http.spring;
 
-import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -17,13 +16,14 @@ import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.Assert;
-import test.bbackjk.http.bean.agent.OkHttpAgent;
 import test.bbackjk.http.annotations.RestClient;
 import test.bbackjk.http.bean.RestClientProxyFactoryBean;
+import test.bbackjk.http.bean.agent.OkHttpAgent;
+import test.bbackjk.http.bean.mapper.DefaultResponseMapper;
 import test.bbackjk.http.exceptions.RestClientCommonException;
+import test.bbackjk.http.helper.LogHelper;
 import test.bbackjk.http.interfaces.HttpAgent;
 import test.bbackjk.http.interfaces.ResponseMapper;
-import test.bbackjk.http.bean.mapper.DefaultResponseMapper;
 import test.bbackjk.http.util.BeansUtil;
 import test.bbackjk.http.util.ClassUtil;
 
@@ -33,18 +33,21 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-@Slf4j
 public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
 
     private static final String FACTORY_BEAN_OBJECT_TYPE = "factoryBeanObjectType";
+    private static final String DEFAULT_AGENT_CLASS_NAME = "OkHttpAgent";
+    private static final String DEFAULT_MAPPER_CLASS_NAME = "DefaultResponseMapper";
     private static final BeanNameGenerator BEAN_NAME_GENERATOR = AnnotationBeanNameGenerator.INSTANCE;
     private final ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
+    private final LogHelper logs = LogHelper.of(this.getClass());
     private final BeanDefinitionRegistry registry;
     private Set<BeanDefinition> httpAgentBeanDefinitionSet;
     private Set<BeanDefinition> responseMapperBeanDefinitionSet;
     private BeanDefinition defaultResponseMapperBeanDefinition;
     private BeanDefinition defaultHttpAgentBeanDefinition;
     private Class<? extends Annotation> annotationClazz;
+    private String basePackage;
 
     public ClassPathRestClientScanner(BeanDefinitionRegistry registry) {
         super(registry, false);
@@ -60,8 +63,8 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         if (httpAgentBeanNames != null) {
             for ( String httpAgentBeanName : httpAgentBeanNames ) {
                 BeanDefinition bd = this.registry.getBeanDefinition(httpAgentBeanName);
-                // TODO: 리팩토링
-                if (bd.getBeanClassName() != null && bd.getBeanClassName().contains(".OkHttpAgent")) {
+                String beanClassName = bd.getBeanClassName();
+                if ( beanClassName != null && beanClassName.startsWith(this.basePackage) && beanClassName.endsWith("." + DEFAULT_AGENT_CLASS_NAME) ) {
                     this.defaultHttpAgentBeanDefinition = bd;
                 }
                 httpAgentBeanDefinitions.add(bd);
@@ -75,14 +78,18 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         if (responseMapperBeanNames != null) {
             for ( String responseMapperBeanName : responseMapperBeanNames ) {
                 BeanDefinition bd = this.registry.getBeanDefinition(responseMapperBeanName);
-                // TODO: 리팩토링
-                if (bd.getBeanClassName() != null && bd.getBeanClassName().contains(".DefaultResponseMapper")) {
+                String beanClassName = bd.getBeanClassName();
+                if ( beanClassName != null && beanClassName.startsWith(this.basePackage) && beanClassName.endsWith("." + DEFAULT_MAPPER_CLASS_NAME) ) {
                     this.defaultResponseMapperBeanDefinition = bd;
                 }
                 responseMapperBeanDefinitions.add(bd);
             }
         }
         this.responseMapperBeanDefinitionSet = responseMapperBeanDefinitions;
+    }
+
+    public void setBasePackage(String basePackage) {
+        this.basePackage = basePackage;
     }
 
     /**
@@ -153,7 +160,7 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         Set<BeanDefinition> candidates = new LinkedHashSet<>();
 
         String packageSearchPath = this.getPackageSearchPath(basePackage);
-        log.info("packageSearchPath :: {}", packageSearchPath);
+        this.logs.log("packageSearchPath :: {}", packageSearchPath);
         ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
         MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory();
 
@@ -168,7 +175,7 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
                 }
             }
         } catch (IOException e) {
-            log.error(e.getMessage());
+            this.logs.err(e.getMessage());
             throw new RestClientCommonException("RestClient 리소스를 읽다가 실패하였습니다.");
         }
 
@@ -187,8 +194,11 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
             String beanClassName = definition.getBeanClassName();
             if ( beanClassName == null || beanClassName.isBlank() ) continue;
 
+            // RestClientProxyFactoryBean 생성자에 Interface Class 주입
             definition.getConstructorArgumentValues().addGenericArgumentValue(beanClassName);
+            // RestClientProxyFactoryBean 생성자에 HttpAgent Bean 주입
             definition.getConstructorArgumentValues().addGenericArgumentValue(this.findHttpAgentBeanDefinition(beanClassName, classLoaders));
+            // RestClientProxyFactoryBean 생성자에 ResponseMapper Bean 주입
             definition.getConstructorArgumentValues().addGenericArgumentValue(this.findResponseMapperBeanDefinition(beanClassName, classLoaders));
 
             definition.setBeanClass(RestClientProxyFactoryBean.class);
@@ -198,12 +208,18 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         }
     }
 
+    /**
+     * 검색할 리소스 경로 Find
+     */
     private String getPackageSearchPath(String basePackage) {
         return ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX
                 + ClassUtil.convertClassNameToResourcePath(getEnvironment().resolveRequiredPlaceholders(basePackage))
                 + "/**/*.class";
     }
 
+    /**
+     * HttpAgent 로 이루어진 BeanDefinition 중 해당 RestClient 의 설정으로 설정한 class 와 일치하는 httpAgent 를 가져온다. 없으면 defaultHttpAgent
+     */
     private BeanDefinition findHttpAgentBeanDefinition(String restClientBeanClassName, ClassLoader[] classLoaders) {
         Class<? extends HttpAgent> httpAgentClass = OkHttpAgent.class;
         try {
@@ -212,7 +228,7 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
                 httpAgentClass = restClient.agent();
             }
         } catch (ClassNotFoundException e) {
-            log.error(e.getMessage());
+            this.logs.err(e.getMessage());
             // ignore..
         }
 
@@ -224,6 +240,9 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         ).findFirst().orElseGet(() -> this.defaultHttpAgentBeanDefinition);
     }
 
+    /**
+     * ResponseMapper 로 이루어진 BeanDefinition 중 해당 RestClient 의 설정으로 설정한 class 와 일치하는 ResponseMapper 를 가져온다. 없으면 defaultResponseMapper
+     */
     private BeanDefinition findResponseMapperBeanDefinition(String restClientBeanClassName, ClassLoader[] classLoaders) {
         Class<? extends ResponseMapper> responseMapperClass = DefaultResponseMapper.class;
         try {
@@ -232,7 +251,7 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
                 responseMapperClass = restClient.mapper();
             }
         } catch (ClassNotFoundException e) {
-            log.error(e.getMessage());
+            this.logs.err(e.getMessage());
             // ignore..
         }
 
@@ -244,6 +263,9 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         ).findFirst().orElseGet(() -> this.defaultResponseMapperBeanDefinition);
     }
 
+    /**
+     * RestClient Bean Class Name 으로부터 Class 를 가져와서 RestClient Annotation 을 가져온다.
+     */
     private RestClient getRestClientAnnotation(String restClientBeanClassName, ClassLoader[] classLoaders) throws ClassNotFoundException {
         if ( restClientBeanClassName == null || restClientBeanClassName.isBlank() ) {
             return null;
@@ -253,7 +275,7 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         Annotation restClientAnnotation = restClientClazz.getAnnotation(this.annotationClazz);
 
         if ( restClientAnnotation == null || restClientAnnotation.annotationType() != RestClient.class) {
-            log.error("restClientAnnotation == null 이거나 Annotation 이 RestClient 가 아닙니다.");
+            this.logs.err("restClientAnnotation == null 이거나 Annotation 이 RestClient 가 아닙니다.");
             throw new RestClientCommonException("RestClient Bean 을 생성하는데 문제가 발생하였습니다.");
         }
 
