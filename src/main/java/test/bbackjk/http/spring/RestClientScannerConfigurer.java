@@ -16,8 +16,8 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
-import test.bbackjk.http.interfaces.HttpAgent;
-import test.bbackjk.http.interfaces.ResponseMapper;
+import test.bbackjk.http.core.interfaces.HttpAgent;
+import test.bbackjk.http.core.interfaces.ResponseMapper;
 
 import java.lang.annotation.Annotation;
 import java.util.Map;

@@ -31,10 +31,10 @@ dependencies {
     // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
     implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.10.0'
 
-    // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-xml
-    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '2.15.2'
-
-
+    // https://mvnrepository.com/artifact/jakarta.xml.bind/jakarta.xml.bind-api
+    implementation group: 'jakarta.xml.bind', name: 'jakarta.xml.bind-api', version: '4.0.0'
+    // https://mvnrepository.com/artifact/com.sun.xml.bind/jaxb-impl
+    implementation group: 'com.sun.xml.bind', name: 'jaxb-impl', version: '4.0.3'
 }
 
 tasks.named('test') {

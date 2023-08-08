@@ -4,7 +4,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
-import test.bbackjk.http.annotations.RestClient;
+import test.bbackjk.http.core.annotations.RestClient;
 import test.bbackjk.http.sample.dto.SampleRequestDto;
 
 import java.util.Map;

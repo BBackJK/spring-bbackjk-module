@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MemberDto {
 
+//    @JacksonXmlProperty(localName = "id")
     private int id;
+//    @JacksonXmlProperty(localName = "name")
     private String name;
 }

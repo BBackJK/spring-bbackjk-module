@@ -11,9 +11,9 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
-import test.bbackjk.http.annotations.RestClient;
-import test.bbackjk.http.exceptions.RestClientCommonException;
-import test.bbackjk.http.helper.LogHelper;
+import test.bbackjk.http.core.annotations.RestClient;
+import test.bbackjk.http.core.exceptions.RestClientCommonException;
+import test.bbackjk.http.core.helper.LogHelper;
 
 public class AutoConfiguredRestClientScannerRegistrar implements BeanFactoryAware, ImportBeanDefinitionRegistrar {
     private static final Class<RestClientScannerConfigurer> REST_CLIENT_SCANNER_CONFIGURER_CLASS = RestClientScannerConfigurer.class;
