@@ -70,7 +70,7 @@ public class TestRequestController {
         return ResponseEntity.ok(restService.post31());
     }
 
-    @GetMapping("/api/v1/hello/post4")
+    @GetMapping(value = "/api/v1/hello/post4")
     ResponseEntity<MemberDto> post4() {
         return ResponseEntity.ok(restService.post4());
     }

@@ -33,20 +33,18 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
+class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
 
     private static final String FACTORY_BEAN_OBJECT_TYPE = "factoryBeanObjectType";
     private static final String DEFAULT_AGENT_CLASS_NAME = "OkHttpAgent";
     private static final String DEFAULT_MAPPER_CLASS_NAME = "DefaultResponseMapper";
-    private static final BeanNameGenerator BEAN_NAME_GENERATOR = AnnotationBeanNameGenerator.INSTANCE;
-    private final ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
     private final LogHelper logs = LogHelper.of(this.getClass());
     private final BeanDefinitionRegistry registry;
     private Set<BeanDefinition> httpAgentBeanDefinitionSet;
     private Set<BeanDefinition> responseMapperBeanDefinitionSet;
     private BeanDefinition defaultResponseMapperBeanDefinition;
     private BeanDefinition defaultHttpAgentBeanDefinition;
-    private Class<? extends Annotation> annotationClazz;
+    private Class<? extends Annotation> annotationClass;
     private String basePackage;
 
     public ClassPathRestClientScanner(BeanDefinitionRegistry registry) {
@@ -54,10 +52,9 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         this.registry = registry;
     }
 
-    public void setAnnotationClazz(Class<? extends Annotation> annotationClazz) {
-        this.annotationClazz = annotationClazz;
+    public void setAnnotationClass(Class<? extends Annotation> annotationClass) {
+        this.annotationClass = annotationClass;
     }
-
     public void setHttpAgentBeanList(String[] httpAgentBeanNames) {
         Set<BeanDefinition> httpAgentBeanDefinitions = new LinkedHashSet<>();
         if (httpAgentBeanNames != null) {
@@ -72,7 +69,6 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         }
         this.httpAgentBeanDefinitionSet = httpAgentBeanDefinitions;
     }
-
     public void setResponseMapperBeanDefinitionSet(String[] responseMapperBeanNames) {
         Set<BeanDefinition> responseMapperBeanDefinitions = new LinkedHashSet<>();
         if (responseMapperBeanNames != null) {
@@ -87,7 +83,6 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         }
         this.responseMapperBeanDefinitionSet = responseMapperBeanDefinitions;
     }
-
     public void setBasePackage(String basePackage) {
         this.basePackage = basePackage;
     }
@@ -107,25 +102,28 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
      * Annotation 의 TypeFilter Add
      */
     public void registerFilters() {
-        Objects.requireNonNull(this.annotationClazz, "annotationClazz 는 필수값 입니다.");
-        addIncludeFilter(new AnnotationTypeFilter(this.annotationClazz));
+        Objects.requireNonNull(this.annotationClass, "annotationClass 는 필수값 입니다.");
+        addIncludeFilter(new AnnotationTypeFilter(this.annotationClass));
     }
 
     /**
      * 기존 ClassPathBeanDefinitionScanner 를 참조한 Custom Scan
      */
     private Set<BeanDefinitionHolder> doCustomScan(String basePackage) {
+        final ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
+        final BeanNameGenerator beanNameGenerator = AnnotationBeanNameGenerator.INSTANCE;
+        
         Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
-        Assert.notNull(this.registry, "BeanDefinitionRegistry Is Not Null.");
+        Assert.notNull(this.registry, "BeanDefinitionRegistry 은 Null 이 될 수 없습니다.");
         // Filter 에서 걸러진 Class 파일들을 BeanDefinition 으로 만듦.
         Set<BeanDefinition> beanDefinitionSet = this.customScanCandidateComponents(basePackage);
         for ( BeanDefinition def : beanDefinitionSet ) {
             if ( def == null ) continue;
             // Scope 지정
-            ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(def);
+            ScopeMetadata scopeMetadata = scopeMetadataResolver.resolveScopeMetadata(def);
             def.setScope(scopeMetadata.getScopeName());
             // beanName parsing
-            String beanName = BEAN_NAME_GENERATOR.generateBeanName(def, this.registry);
+            String beanName = beanNameGenerator.generateBeanName(def, this.registry);
 
             if ( def instanceof AbstractBeanDefinition ) {
                 super.postProcessBeanDefinition((AbstractBeanDefinition) def, beanName);
@@ -160,7 +158,7 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         Set<BeanDefinition> candidates = new LinkedHashSet<>();
 
         String packageSearchPath = this.getPackageSearchPath(basePackage);
-        this.logs.log("packageSearchPath :: {}", packageSearchPath);
+        this.logs.log("packageSearchPath : {}", packageSearchPath);
         ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
         MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory();
 
@@ -232,12 +230,14 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
             // ignore..
         }
 
-        Class<? extends HttpAgent> finalHttpAgentClass = httpAgentClass;
-        return this.httpAgentBeanDefinitionSet.stream().filter(httpAgentBeanDefinition ->
-            httpAgentBeanDefinition != null
-                    && httpAgentBeanDefinition.getBeanClassName() != null
-                    && httpAgentBeanDefinition.getBeanClassName().equals(finalHttpAgentClass.getName())
-        ).findFirst().orElseGet(() -> this.defaultHttpAgentBeanDefinition);
+        BeanDefinition result = this.defaultHttpAgentBeanDefinition;
+        for (BeanDefinition def : this.httpAgentBeanDefinitionSet) {
+            if (def != null && httpAgentClass.getName().equals(def.getBeanClassName())) {
+                result = def;
+                break;
+            }
+        }
+        return result;
     }
 
     /**
@@ -255,12 +255,14 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
             // ignore..
         }
 
-        Class<? extends ResponseMapper> finalResponseMapperClass = responseMapperClass;
-        return this.responseMapperBeanDefinitionSet.stream().filter(responseMapperBeanDefinition ->
-                responseMapperBeanDefinition != null
-                        && responseMapperBeanDefinition.getBeanClassName() != null
-                        && responseMapperBeanDefinition.getBeanClassName().equals(finalResponseMapperClass.getName())
-        ).findFirst().orElseGet(() -> this.defaultResponseMapperBeanDefinition);
+        BeanDefinition result = this.defaultResponseMapperBeanDefinition;
+        for (BeanDefinition def : this.responseMapperBeanDefinitionSet) {
+            if (def != null && responseMapperClass.getName().equals(def.getBeanClassName())) {
+                result = def;
+                break;
+            }
+        }
+        return result;
     }
 
     /**
@@ -271,8 +273,8 @@ public class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
             return null;
         }
 
-        Class<?> restClientClazz = ClassUtil.classForName(restClientBeanClassName, classLoaders);
-        Annotation restClientAnnotation = restClientClazz.getAnnotation(this.annotationClazz);
+        Class<?> restClientClass = ClassUtil.classForName(restClientBeanClassName, classLoaders);
+        Annotation restClientAnnotation = restClientClass.getAnnotation(this.annotationClass);
 
         if ( restClientAnnotation == null || restClientAnnotation.annotationType() != RestClient.class) {
             this.logs.err("restClientAnnotation == null 이거나 Annotation 이 RestClient 가 아닙니다.");

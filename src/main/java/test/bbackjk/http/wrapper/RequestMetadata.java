@@ -48,6 +48,21 @@ public class RequestMetadata {
         return new RequestMetadata(getFullUrl(origin, pathname), mediaType, restClientLogger);
     }
 
+    public static RequestMetadata ofEmpty(String requestUrl, MediaType mediaType, LogHelper restClientLogger) {
+        return new RequestMetadata(requestUrl, mediaType, restClientLogger);
+    }
+
+    public static RequestMetadata of(
+            String requestUrl, MediaType mediaType
+            , Map<String, String> headerValuesMap
+            , Map<String, String> pathValuesMap
+            , Map<String, String> queryValuesMap
+            , Object bodyData, Object[] args
+            , LogHelper restClientLogger
+    ) {
+        return new RequestMetadata(requestUrl, mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger);
+    }
+
     public static RequestMetadata of(
             String origin, String pathname, MediaType mediaType
             , Map<String, String> headerValuesMap
@@ -57,10 +72,6 @@ public class RequestMetadata {
             , LogHelper restClientLogger
     ) {
         return new RequestMetadata(getFullUrl(origin, pathname), mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger);
-    }
-
-    public boolean isXmlContent() {
-        return MediaType.APPLICATION_XML.equalsTypeAndSubtype(this.contentType);
     }
 
     public boolean isFormContent() {

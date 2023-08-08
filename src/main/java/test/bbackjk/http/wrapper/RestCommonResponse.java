@@ -30,14 +30,14 @@ public class RestCommonResponse {
         if ( this.success ) {
             return "";
         }
-        StringBuffer sb = new StringBuffer(String.valueOf(httpCode));
+        StringBuilder sb = new StringBuilder(String.valueOf(httpCode));
         if ( jsonString != null && !jsonString.isBlank() ) {
             try {
-                Map<String, String> jsonMap = this.om.readValue(jsonString, Map.class);
+                Map<?, ?> jsonMap = this.om.readValue(jsonString, Map.class);
                 String result = DEFAULT_ERROR_MESSAGE;
-                String message = jsonMap.get("message");
-                String msg = jsonMap.get("msg");
-                String error = jsonMap.get("error");
+                String message = (String) jsonMap.get("message");
+                String msg = (String) jsonMap.get("msg");
+                String error = (String) jsonMap.get("error");
                 if ( message != null && !message.isBlank() ) {
                     result = message;
                 } else if ( msg != null && !msg.isBlank() ) {

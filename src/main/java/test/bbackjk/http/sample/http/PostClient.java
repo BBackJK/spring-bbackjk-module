@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import test.bbackjk.http.annotations.RestClient;
-import test.bbackjk.http.helper.RestCallback;
+import test.bbackjk.http.interfaces.RestCallback;
 import test.bbackjk.http.sample.dto.MemberDto;
 import test.bbackjk.http.sample.dto.SampleRequestDto;
 import test.bbackjk.http.wrapper.RestResponse;

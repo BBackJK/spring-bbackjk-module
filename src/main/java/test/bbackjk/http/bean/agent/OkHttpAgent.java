@@ -2,10 +2,10 @@ package test.bbackjk.http.bean.agent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okio.Buffer;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestMethod;
 import test.bbackjk.http.configuration.RestClientConnectProperties;
 import test.bbackjk.http.exceptions.RestClientCallException;
 import test.bbackjk.http.helper.LogHelper;
@@ -23,14 +23,13 @@ import java.util.concurrent.TimeUnit;
 
 
 @Component
-@Slf4j
 public class OkHttpAgent implements HttpAgent {
+    private static final String LOGGING_DELIMITER = "========================================================================================";
     private final OkHttpClient client;
     private final ObjectMapper om;
 
     public OkHttpAgent(RestClientConnectProperties connectProperties) {
         OkHttpClient.Builder okHttpBuilder = new OkHttpClient.Builder();
-//        okHttpBuilder.addInterceptor(new OkHttpInterceptor());
 
         Duration timeout = Duration.ofSeconds(connectProperties.getTimout());
 
@@ -58,67 +57,61 @@ public class OkHttpAgent implements HttpAgent {
 
     @Override
     public RestCommonResponse doGet(RequestMetadata requestMetadata) throws RestClientCallException {
-        String url = RestClientUtils.getParseUrl(requestMetadata);
-
-        HttpUrl.Builder httpUrlBuilder = HttpUrl.get(url).newBuilder();
-        this.initQueryParameters(httpUrlBuilder, requestMetadata.getQueryValuesMap());
-        Request.Builder requestBuilder = new Request.Builder()
-                .get()
-                .url(httpUrlBuilder.build());
-        this.initHeaderValues(requestBuilder, requestMetadata.getHeaderValuesMap());
-
-        Request request = requestBuilder.build();
-        try (Response result = client.newCall(request).execute()) {
-            this.logging(result, requestMetadata.getRestClientLogger());
-            ResponseBody responseBody = result.body();
-            return new RestCommonResponse(result.code(), responseBody == null ? "" : responseBody.string(), this.om);
-        } catch (IOException e) {
-            throw new RestClientCallException(e);
-        }
+        return this.doHttp(requestMetadata, RequestMethod.GET);
     }
 
     @Override
     public RestCommonResponse doPost(RequestMetadata requestMetadata) throws RestClientCallException {
-        RequestBody requestBody = null;
-
-        try {
-            requestBody = this.getRequestBody(requestMetadata);
-        } catch (JsonProcessingException e) {
-            throw new RestClientCallException(e);
-        }
-
-        String url = RestClientUtils.getParseUrl(requestMetadata);
-
-        HttpUrl.Builder httpUrlBuilder = HttpUrl.get(url).newBuilder();
-        this.initQueryParameters(httpUrlBuilder, requestMetadata.getQueryValuesMap());
-        Request.Builder requestBuilder = new Request.Builder()
-                .post(requestBody)
-                .url(httpUrlBuilder.build());
-        this.initHeaderValues(requestBuilder, requestMetadata.getHeaderValuesMap());
-
-        try (Response result = client.newCall(requestBuilder.build()).execute()) {
-            this.logging(result, requestMetadata.getRestClientLogger());
-            ResponseBody responseBody = result.body();
-            String bodyString = responseBody == null ? "" :responseBody.string();
-            return new RestCommonResponse(result.code(), bodyString, this.om);
-        } catch (IOException e) {
-            throw new RestClientCallException(e);
-        }
+        return this.doHttp(requestMetadata, RequestMethod.POST);
     }
 
     @Override
     public RestCommonResponse doPatch(RequestMetadata requestMetadata) throws RestClientCallException {
-        return null;
+        return this.doHttp(requestMetadata, RequestMethod.PATCH);
     }
 
     @Override
     public RestCommonResponse doPut(RequestMetadata requestMetadata) throws RestClientCallException {
-        return null;
+        return this.doHttp(requestMetadata, RequestMethod.PUT);
     }
 
     @Override
     public RestCommonResponse doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
-        return null;
+        return this.doHttp(requestMetadata, RequestMethod.DELETE);
+    }
+
+    private RestCommonResponse doHttp(RequestMetadata requestMetadata, RequestMethod requestMethod) throws RestClientCallException {
+        boolean isRequestBodyContent = requestMethod == RequestMethod.POST || requestMethod == RequestMethod.PUT || requestMethod == RequestMethod.PATCH;
+        RequestBody requestBody = null;
+
+        if ( isRequestBodyContent ) {
+            try {
+                requestBody = this.getRequestBody(requestMetadata);
+            } catch (JsonProcessingException e) {
+                throw new RestClientCallException(e);
+            }
+        }
+        String url = RestClientUtils.getParseUrl(requestMetadata);
+        LogHelper logger = requestMetadata.getRestClientLogger();
+
+        HttpUrl.Builder httpUrlBuilder = HttpUrl.get(url).newBuilder();
+        this.initQueryParameters(httpUrlBuilder, requestMetadata.getQueryValuesMap());
+        Request.Builder requestBuilder = new Request.Builder()
+                .method(requestMethod.name(), requestBody)
+                .url(url)
+                ;
+        this.initHeaderValues(requestBuilder, requestMetadata.getHeaderValuesMap());
+
+        Request request = requestBuilder.build();
+        this.requestLogging(request, logger);
+        try (Response result = client.newCall(request).execute()) {
+            ResponseBody responseBody = result.body();
+            String bodyString = responseBody == null ? "" : responseBody.string();
+            this.responseLogging(result, logger, bodyString);
+            return new RestCommonResponse(result.code(), bodyString, this.om);
+        } catch (IOException e) {
+            throw new RestClientCallException(e);
+        }
     }
 
     private void initQueryParameters(HttpUrl.Builder httpUrlBuilder, Map<String, String> queryValueMap) {
@@ -157,20 +150,42 @@ public class OkHttpAgent implements HttpAgent {
         return MediaType.parse(requestContentType.getType() + "/" + requestContentType.getSubtype());
     }
 
-    private void logging(Response response, LogHelper logger) {
-        Request request = response.request();
+    private void requestLogging(Request request, LogHelper logger) {
+        int headerSize = request.headers().size();
 
-        logger.log("Url          : {} {} {} ms", request.method(), request.url().url().toString(), response.receivedResponseAtMillis() - response.sentRequestAtMillis());
-        request.headers().iterator().forEachRemaining(k -> logger.log("Header       : {}, {}", k.component1(), k.component2()));
+        logger.log("Request        {}", LOGGING_DELIMITER);
+        logger.log("Request        | Url                 : {} {} ", request.method(), request.url().url().toString(), 0);
+        if ( headerSize < 1 ) {
+            logger.log("Request        | Header              : EMPTY");
+        } else {
+            request.headers().iterator()
+                    .forEachRemaining(h -> logger.log("Request        | Header               : {} - {}", h.component1(), h.component2()));
+        }
 
         if (request.body() != null) {
             try (Buffer bf = new Buffer()) {
                 request.body().writeTo(bf);
-                logger.log("Body         : {}", bf.readString(Charset.defaultCharset()));
-                logger.log("Content-Type : {}", request.body().contentType());
+                logger.log("Request        | Body                : {}", bf.readString(Charset.defaultCharset()));
+                logger.log("Request        | Content-Type        : {}", request.body().contentType());
             } catch (IOException e) {
-                logger.err(e.getMessage());
+                // ignore...
             }
         }
+        logger.log("Request        {}", LOGGING_DELIMITER);
+    }
+
+    private void responseLogging(Response response, LogHelper logger, String jsonString) {
+        int headerSize = response.headers().size();
+
+        logger.log("Response       {}", LOGGING_DELIMITER);
+        logger.log("Response       | Protocol - Millis   : {} - {} ms", response.protocol(), response.receivedResponseAtMillis() - response.sentRequestAtMillis());
+        logger.log("Response       | Data(JsonString)    : {}", jsonString);
+        if ( headerSize < 1 ) {
+            logger.log("Response       | Header             : EMPTY");
+        } else {
+            response.headers().iterator()
+                    .forEachRemaining(h -> logger.log("Response       | Header              : {} - {}", h.component1(), h.component2()));
+        }
+        logger.log("Response       {}", LOGGING_DELIMITER);
     }
 }

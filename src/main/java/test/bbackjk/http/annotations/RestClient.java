@@ -17,7 +17,7 @@ public @interface RestClient {
     String value() default "";
     @AliasFor("value")
     String context() default "";
-    String url() default "";
+    String url();
 
     Class<? extends HttpAgent> agent() default OkHttpAgent.class;
     Class<? extends ResponseMapper> mapper() default DefaultResponseMapper.class;

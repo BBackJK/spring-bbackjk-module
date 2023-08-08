@@ -1,14 +1,17 @@
 package test.bbackjk.http.proxy;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import test.bbackjk.http.annotations.RestClient;
 import test.bbackjk.http.exceptions.RestClientCallException;
 import test.bbackjk.http.exceptions.RestClientDataMappingException;
 import test.bbackjk.http.helper.LogHelper;
-import test.bbackjk.http.helper.RestCallback;
 import test.bbackjk.http.interfaces.HttpAgent;
 import test.bbackjk.http.interfaces.ResponseMapper;
-import test.bbackjk.http.reflector.RequestReturnResolver;
+import test.bbackjk.http.interfaces.RestCallback;
 import test.bbackjk.http.reflector.RestClientMethodInvoker;
+import test.bbackjk.http.reflector.RestClientMethodMetadata;
+import test.bbackjk.http.util.ObjectUtils;
 import test.bbackjk.http.util.RestMapUtils;
 import test.bbackjk.http.wrapper.RestCommonResponse;
 import test.bbackjk.http.wrapper.RestResponse;
@@ -20,119 +23,132 @@ import java.util.Optional;
 
 class RestClientProxy<T> implements InvocationHandler {
 
-    private final Class<?> restClientInterface;
-    private final Map<Method, RestClientMethodInvoker> cachedMethod;
+    private static final LogHelper LOGGER = LogHelper.of(RestClientProxy.class);
+    private final Class<T> restClientInterface;
     private final HttpAgent httpAgent;
-    private final RestClient restClient;
     private final ResponseMapper dataMapper;
-    private final LogHelper logger = LogHelper.of(this.getClass());
+    private final String origin;
     private final LogHelper restClientLogger;
-
+    private final Map<Method, RestClientMethodInvoker> cachedMethod;
     public RestClientProxy(
             Class<T> restClientInterface
             , Map<Method, RestClientMethodInvoker> cachedMethod
             , HttpAgent httpAgent
             , ResponseMapper dataMapper
     ) {
+        RestClient restClient = restClientInterface.getAnnotation(RestClient.class);
+        this.origin = restClient.url();
         this.restClientInterface = restClientInterface;
-        this.restClient = restClientInterface.getAnnotation(RestClient.class);
-        this.restClientLogger = LogHelper.of(this.getRestClientLogContext(restClientInterface));
         this.httpAgent = httpAgent;
         this.dataMapper = dataMapper;
-        this.initCachedMethodHandlerByMethod(restClientInterface, cachedMethod);
         this.cachedMethod = cachedMethod;
+        this.restClientLogger = LogHelper.of(this.getRestClientLogContext(restClientInterface, restClient));
+        this.initCachedMethodHandlerByMethod(restClientInterface, httpAgent, this.origin, this.restClientLogger);
     }
 
     @Override
     public Object invoke(Object o, Method method, Object[] args) throws Throwable {
-        RestClientMethodInvoker mi = RestMapUtils.computeIfAbsent(this.cachedMethod, method, m -> new RestClientMethodInvoker(m, this.restClientLogger, this.restClientInterface));
-
+        RestClientMethodInvoker mi
+                = RestMapUtils.computeIfAbsent(this.cachedMethod, method, m -> new RestClientMethodInvoker(this.restClientInterface, m, this.httpAgent, this.origin, this.restClientLogger));
         RestCommonResponse response;
-
         try {
-            response = mi.invoke(this.restClient.url(), this.httpAgent, args);
+            response = mi.execute(args);
         } catch (RestClientCallException e) {
-            this.logger.err(e.getMessage());
-            throw new RestClientCallException();
+            LOGGER.err(e.getMessage());
+            throw e;
         }
 
-        // 요청 실패 시 throws
-        // 1. Return type 이 RestResponse 일시
-        // 2. RestCallback 을 사용했을 시
-        // 핸들링 할 수 있게 해줌.
-        if ( !response.isSuccess() && !mi.getRequestReturnResolver().isReturnRestResponse() && mi.hasRestCallbackArgument() ) {
+        if ( !response.isSuccess() && !mi.hasFailHandler() ) {
             throw new RestClientCallException(response.getFailMessage());
         }
 
         try {
-            return this.toReturnValues(mi, response, (RestCallback<Object>) this.getRestCallbackByArg(args));
+            Object result = this.toReturnValues(mi, response);
+
+            RestCallback<Object> callback = this.getRestCallbackByArg(args);
+            if ( callback != null ) {
+                if ( response.isSuccess() ) {
+                    callback.onSuccess(response.getHttpCode(), result);
+                } else {
+                    callback.onFailure(response.getHttpCode(), response.getFailMessage());
+                }
+            }
+
+            return result;
         } catch (RestClientDataMappingException e) {
-            this.logger.err(e.getMessage());
-            throw new RestClientDataMappingException("RestClient Response Data Mapping 에 실패 하였습니다.");
+            LOGGER.err(e.getMessage());
+            throw new RestClientCallException("RestClient Response Data Mapping 에 실패 하였습니다.");
         }
     }
 
-    private Object toReturnValues(RestClientMethodInvoker methodInvoker, RestCommonResponse response, RestCallback<Object> callback) throws RestClientDataMappingException {
+    private void initCachedMethodHandlerByMethod(Class<?> restClientInterface, HttpAgent httpAgent, String origin, LogHelper restClientLogger) {
+        if ( this.cachedMethod.isEmpty() ) {
+            Method[] methods = restClientInterface.getMethods();
+            int methodCount = methods.length;
+            for (int i=0; i<methodCount; i++) {
+                Method m = methods[i];
+                this.cachedMethod.put(m, new RestClientMethodInvoker(restClientInterface, m, httpAgent, origin, restClientLogger));
+            }
+        }
+    }
+
+    private Object toReturnValues(RestClientMethodInvoker invoker, RestCommonResponse response) throws RestClientDataMappingException {
         if ( response == null ) {
             return null;
         }
 
         Object result = null;
         String jsonResult = response.getJsonString();
-        RequestReturnResolver requestReturnResolver = methodInvoker.getRequestReturnResolver();
-        if (requestReturnResolver.isReturnRestResponse()) {
-            if (response.isSuccess() ) {
-                Object data = requestReturnResolver.isReturnsList()
-                        ? this.dataMapper.converts(jsonResult, requestReturnResolver.getReturnRawType())
-                        : this.dataMapper.convert(jsonResult, requestReturnResolver.getReturnRawType());
-                result = RestResponse.success(data, response.getHttpCode());
+        RestClientMethodMetadata restClientMethod = invoker.getMethodMetadata();
+
+        if (restClientMethod.isWrap() && !ObjectUtils.isEmpty(jsonResult)) {
+            if (restClientMethod.isWrapList() || restClientMethod.isWrapList(restClientMethod.getSecondRawType())) {
+                result = this.dataMapper.converts(jsonResult, restClientMethod.getRawType());
+            } else if (restClientMethod.isMap()) {
+                result = this.dataMapper.convert(jsonResult, Map.class);
             } else {
-                result = RestResponse.fail(response.getHttpCode(), response.getFailMessage());
+                result = this.dataMapper.convert(jsonResult, restClientMethod.getRawType());
             }
-        } else if (requestReturnResolver.isReturnsList()) {
-            result = this.dataMapper.converts(jsonResult, requestReturnResolver.getReturnRawType());
-        } else if (requestReturnResolver.isReturnsMap()) {
-            result = this.dataMapper.convert(jsonResult, Map.class);
-        } else if (requestReturnResolver.isReturnsOptional()) {
-            result = Optional.ofNullable(this.dataMapper.convert(jsonResult, requestReturnResolver.getReturnRawType()));
-        } else if (requestReturnResolver.isReturnsString()){
-            result = jsonResult;
         } else {
-            if ( !requestReturnResolver.isReturnsVoid() ) {
-                result = this.dataMapper.convert(jsonResult, requestReturnResolver.getReturnRawType());
+            if (restClientMethod.isString()) {
+                result = jsonResult;
+            } else {
+                result = restClientMethod.isVoid() || ObjectUtils.isEmpty(jsonResult)
+                        ? null
+                        : this.dataMapper.convert(jsonResult, restClientMethod.getRawType());
             }
         }
 
-        if ( callback != null ) {
-            if (response.isSuccess()) {
-                callback.onSuccess(
-                        result instanceof RestResponse
-                                ? ((RestResponse<?>) result).getHttpCode() : response.getHttpCode()
-                        ,
-                        result instanceof RestResponse ? ((RestResponse<?>) result).getData() : result
-                );
-            } else {
-                callback.onFailure(response.getHttpCode(), response.getFailMessage());
-            }
+        if (restClientMethod.isWrapRestResponse()) {
+            result = response.isSuccess()
+                    ? RestResponse.success(result, response.getHttpCode())
+                    : RestResponse.fail(response.getHttpCode(), response.getFailMessage());
+        } else if (restClientMethod.isWrapOptional()) {
+            result = Optional.ofNullable(result);
         }
 
         return result;
     }
 
-    private void initCachedMethodHandlerByMethod(Class<?> restClientInterface, Map<Method, RestClientMethodInvoker> cachedMethod) {
-        if ( cachedMethod.isEmpty() ) {
-            Method[] methods = restClientInterface.getMethods();
-            int methodCount = methods.length;
-            for (int i=0; i<methodCount; i++) {
-                Method m = methods[i];
-                cachedMethod.put(m, new RestClientMethodInvoker(m, this.restClientLogger, this.restClientInterface));
+    @Nullable
+    private RestCallback<Object> getRestCallbackByArg(Object[] args) {
+        if ( args == null ) {
+            return null;
+        }
+        int paramCount = args.length;
+        for (int i=0; i<paramCount; i++) {
+            Object arg = args[i];
+            if (arg instanceof RestCallback) {
+                return (RestCallback<Object>) arg;
             }
         }
+        return null;
     }
 
-    private String getRestClientLogContext(Class<?> restClientInterface) {
-        String value = this.restClient.value();
-        String context = this.restClient.context();
+    @NotNull
+    private String getRestClientLogContext(Class<?> restClientInterface, RestClient restClient) {
+        String value = restClient.value();
+        String context = restClient.context();
 
         if ( value.isBlank() && context.isBlank() ) {
             return restClientInterface.getSimpleName();
@@ -143,16 +159,5 @@ class RestClientProxy<T> implements InvocationHandler {
                 return String.format("%s#%s", restClientInterface.getSimpleName(), context);
             }
         }
-    }
-
-    private RestCallback<?> getRestCallbackByArg(Object[] args) {
-        int paramCount = args.length;
-        for (int i=0; i<paramCount; i++) {
-            Object arg = args[i];
-            if (arg instanceof RestCallback) {
-                return (RestCallback<?>) arg;
-            }
-        }
-        return null;
     }
 }

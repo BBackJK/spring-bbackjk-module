@@ -7,7 +7,7 @@ import org.springframework.util.MethodInvoker;
 import org.springframework.web.bind.annotation.*;
 import test.bbackjk.http.exceptions.RestClientCallException;
 import test.bbackjk.http.helper.LogHelper;
-import test.bbackjk.http.helper.RestCallback;
+import test.bbackjk.http.interfaces.RestCallback;
 import test.bbackjk.http.util.ClassUtil;
 import test.bbackjk.http.util.ReflectorUtils;
 import test.bbackjk.http.wrapper.RequestMetadata;

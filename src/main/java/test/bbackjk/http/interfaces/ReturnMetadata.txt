@@ -1,0 +1,19 @@
+package test.bbackjk.http.interfaces;
+
+import org.jetbrains.annotations.Nullable;
+
+public interface ReturnMetadata {
+    boolean isWrap();
+    boolean isWrapList();
+    boolean isWrapList(Class<?> clazz);
+    boolean isWrapMap();
+    boolean isVoid();
+    boolean isWrapOptional();
+    boolean isString();
+    boolean isWrapRestResponse();
+    boolean isDoubleWrap();    // 2번 wrapping 되어있는지
+    Class<?> getRawType();
+    @Nullable
+    Class<?> getSecondRawType();
+
+}

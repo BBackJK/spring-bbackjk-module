@@ -30,8 +30,6 @@ public class RestClientProxyFactory<T> {
         return this.cachedMethod;
     }
 
-
-
     @SuppressWarnings("unchecked")
     protected T newInstance(RestClientProxy<T> restClientProxy) {
         return (T) Proxy.newProxyInstance(

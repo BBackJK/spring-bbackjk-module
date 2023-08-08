@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import test.bbackjk.http.exceptions.RestClientCallException;
-import test.bbackjk.http.helper.RestCallback;
+import test.bbackjk.http.interfaces.RestCallback;
 import test.bbackjk.http.sample.dto.MemberDto;
 import test.bbackjk.http.sample.dto.SampleRequestDto;
 import test.bbackjk.http.sample.http.GetClient;

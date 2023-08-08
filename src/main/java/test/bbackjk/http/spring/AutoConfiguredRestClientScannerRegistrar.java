@@ -1,6 +1,5 @@
 package test.bbackjk.http.spring;
 
-import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
@@ -14,13 +13,14 @@ import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
 import test.bbackjk.http.annotations.RestClient;
 import test.bbackjk.http.exceptions.RestClientCommonException;
+import test.bbackjk.http.helper.LogHelper;
 
-@Slf4j
 public class AutoConfiguredRestClientScannerRegistrar implements BeanFactoryAware, ImportBeanDefinitionRegistrar {
     private static final Class<RestClientScannerConfigurer> REST_CLIENT_SCANNER_CONFIGURER_CLASS = RestClientScannerConfigurer.class;
     private static final Class<RestClient> TARGET_ANNOTATION_CLASS = RestClient.class;
     private static final String STR_BASE_PACKAGE = "basePackage";
-    private static final String STR_ANNOTATION_CLASS = "annotationClazz";
+    private static final String STR_ANNOTATION_CLASS = "annotationClass";
+    private final LogHelper logger = LogHelper.of(getClass());
     private ConfigurableListableBeanFactory beanFactory;
 
     @Override
@@ -46,7 +46,7 @@ public class AutoConfiguredRestClientScannerRegistrar implements BeanFactoryAwar
             BeanDefinition bd = this.beanFactory.getBeanDefinition(springBootApplicationBeanName);
             return bd.getResolvableType().resolve().getPackageName();
         } catch (Exception e) {
-            log.error(e.getMessage());
+            this.logger.err(e.getMessage());
             throw new RestClientCommonException("SpringBootApplication 클래스를 찾는데 실패하였습니다.");
         }
     }

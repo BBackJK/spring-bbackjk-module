@@ -2,7 +2,7 @@ package test.bbackjk.http.wrapper;
 
 
 import lombok.Getter;
-import test.bbackjk.http.funtional.MultiConsumer;
+import test.bbackjk.http.functional.MultiConsumer;
 
 import java.util.Optional;
 import java.util.function.Consumer;

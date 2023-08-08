@@ -1,4 +1,4 @@
-package test.bbackjk.http.helper;
+package test.bbackjk.http.interfaces;
 
 public interface RestCallback<T> {
 

@@ -9,6 +9,7 @@ public interface ResponseMapper {
     <T> T convert(String value, Class<T> clazz) throws RestClientDataMappingException;
     <T> List<T> converts(String value, Class<T> clazz) throws RestClientDataMappingException;
     <T, E> E convert(T value, Class<E> clazz) throws RestClientDataMappingException;
+    <T> T toXml(String value, Class<T> clazz) throws RestClientDataMappingException;
 
     default <T> void canConvert(Class<T> clazz) throws RestClientDataMappingException {
         try {

@@ -25,28 +25,18 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Setter
-public class RestClientScannerConfigurer implements InitializingBean, ApplicationContextAware, BeanNameAware, BeanDefinitionRegistryPostProcessor {
+class RestClientScannerConfigurer implements InitializingBean, ApplicationContextAware, BeanNameAware, BeanDefinitionRegistryPostProcessor {
 
     private String basePackage;
-    private Class<? extends Annotation> annotationClazz;
+    private Class<? extends Annotation> annotationClass;
     private ApplicationContext applicationContext;
     private String beanName;
-
-    @Override // ApplicationContextAware 의 implements
-    public void setApplicationContext(@NotNull ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
-
-    @Override // BeanNameAware 의 implements
-    public void setBeanName(@NotNull String name) {
-        this.beanName = name;
-    }
 
     @Override // BeanDefinitionRegistryPostProcessor 의 implements
     public void postProcessBeanDefinitionRegistry(@NotNull BeanDefinitionRegistry registry) throws BeansException {
         ClassPathRestClientScanner scanner = new ClassPathRestClientScanner(registry);
         scanner.setBasePackage(this.basePackage);
-        scanner.setAnnotationClazz(this.annotationClazz);
+        scanner.setAnnotationClass(this.annotationClass);
         scanner.setHttpAgentBeanList(this.applicationContext.getBeanNamesForType(HttpAgent.class));
         scanner.setResponseMapperBeanDefinitionSet(this.applicationContext.getBeanNamesForType(ResponseMapper.class));
         scanner.registerFilters();
@@ -61,7 +51,7 @@ public class RestClientScannerConfigurer implements InitializingBean, Applicatio
     @Override // InitializingBean 의 implements
     public void afterPropertiesSet() throws Exception {
         Objects.requireNonNull(this.basePackage, "basePackage 값이 비어 있습니다.");
-        Objects.requireNonNull(this.annotationClazz, "annotationClazz 값이 비어 있습니다.");
+        Objects.requireNonNull(this.annotationClass, "annotationClass 값이 비어 있습니다.");
         Objects.requireNonNull(this.applicationContext, "applicationContext 값이 비어 있습니다.");
         Objects.requireNonNull(this.beanName, "beanName 값이 비어 있습니다.");
     }

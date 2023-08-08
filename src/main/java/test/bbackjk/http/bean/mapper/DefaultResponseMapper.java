@@ -3,6 +3,7 @@ package test.bbackjk.http.bean.mapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.springframework.stereotype.Component;
 import test.bbackjk.http.exceptions.RestClientDataMappingException;
 import test.bbackjk.http.interfaces.ResponseMapper;
@@ -11,17 +12,20 @@ import java.util.List;
 
 @Component
 public class DefaultResponseMapper implements ResponseMapper {
-
     private final ObjectMapper om;
+    private final ObjectMapper xm;
 
     public DefaultResponseMapper() {
         this.om = new ObjectMapper();
+        this.xm = new XmlMapper();
     }
 
     @Override
     public <T> T convert(String value, Class<T> clazz) throws RestClientDataMappingException {
         try {
-            this.canConvert(clazz);
+            if (!clazz.isInterface()) {
+                this.canConvert(clazz);
+            }
             return this.om.readValue(value, clazz);
         } catch (IllegalArgumentException | JsonProcessingException e) {
             throw new RestClientDataMappingException(e);
@@ -41,9 +45,25 @@ public class DefaultResponseMapper implements ResponseMapper {
     @Override
     public <T, E> E convert(T value, Class<E> clazz) throws RestClientDataMappingException {
         try {
-            this.canConvert(clazz);
+            if (!clazz.isInterface()) {
+                this.canConvert(value.getClass());
+                this.canConvert(clazz);
+            }
             return this.om.convertValue(value, new TypeReference<>() {});
         } catch (IllegalArgumentException e) {
+            throw new RestClientDataMappingException(e);
+        }
+    }
+
+    @Override
+    public <T> T toXml(String value, Class<T> clazz) throws RestClientDataMappingException {
+        try {
+            if (!clazz.isInterface()) {
+                this.canConvert(clazz);
+            }
+            this.canConvert(clazz);
+            return this.xm.readValue(value, clazz);
+        } catch (JsonProcessingException e) {
             throw new RestClientDataMappingException(e);
         }
     }
