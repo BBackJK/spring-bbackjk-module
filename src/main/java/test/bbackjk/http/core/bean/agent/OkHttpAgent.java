@@ -98,7 +98,7 @@ public class OkHttpAgent implements HttpAgent {
         this.initQueryParameters(httpUrlBuilder, requestMetadata.getQueryValuesMap());
         Request.Builder requestBuilder = new Request.Builder()
                 .method(requestMethod.name(), requestBody)
-                .url(url);
+                .url(httpUrlBuilder.build());
         this.initHeaderValues(requestBuilder, requestMetadata.getHeaderValuesMap());
 
         Request request = requestBuilder.build();

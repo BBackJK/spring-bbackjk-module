@@ -13,7 +13,7 @@ import test.bbackjk.http.core.util.RestMapUtils;
 import test.bbackjk.http.core.wrapper.RestCommonResponse;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.interfaces.RestCallback;
-import test.bbackjk.http.core.reflector.RestClientMethodInvoker;
+import test.bbackjk.http.core.reflector.RequestMethodInvoker;
 import test.bbackjk.http.core.wrapper.RestResponse;
 
 import java.lang.reflect.InvocationHandler;
@@ -29,10 +29,10 @@ class RestClientProxy<T> implements InvocationHandler {
     private final ResponseMapper dataMapper;
     private final String origin;
     private final LogHelper restClientLogger;
-    private final Map<Method, RestClientMethodInvoker> cachedMethod;
+    private final Map<Method, RequestMethodInvoker> cachedMethod;
     public RestClientProxy(
             Class<T> restClientInterface
-            , Map<Method, RestClientMethodInvoker> cachedMethod
+            , Map<Method, RequestMethodInvoker> cachedMethod
             , HttpAgent httpAgent
             , ResponseMapper dataMapper
     ) {
@@ -48,8 +48,8 @@ class RestClientProxy<T> implements InvocationHandler {
 
     @Override
     public Object invoke(Object o, Method method, Object[] args) throws Throwable {
-        RestClientMethodInvoker mi
-                = RestMapUtils.computeIfAbsent(this.cachedMethod, method, m -> new RestClientMethodInvoker(this.restClientInterface, m, this.httpAgent, this.origin, this.restClientLogger));
+        RequestMethodInvoker mi
+                = RestMapUtils.computeIfAbsent(this.cachedMethod, method, m -> new RequestMethodInvoker(this.restClientInterface, m, this.httpAgent, this.origin, this.restClientLogger));
         RestCommonResponse response;
         try {
             response = mi.execute(args);
@@ -87,12 +87,12 @@ class RestClientProxy<T> implements InvocationHandler {
             int methodCount = methods.length;
             for (int i=0; i<methodCount; i++) {
                 Method m = methods[i];
-                this.cachedMethod.put(m, new RestClientMethodInvoker(restClientInterface, m, httpAgent, origin, restClientLogger));
+                this.cachedMethod.put(m, new RequestMethodInvoker(restClientInterface, m, httpAgent, origin, restClientLogger));
             }
         }
     }
 
-    private Object toReturnValues(RestClientMethodInvoker invoker, RestCommonResponse response) throws RestClientDataMappingException {
+    private Object toReturnValues(RequestMethodInvoker invoker, RestCommonResponse response) throws RestClientDataMappingException {
         if ( response == null ) {
             return null;
         }

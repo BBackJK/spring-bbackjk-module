@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import test.bbackjk.http.sample.dto.MemberDto;
+import test.bbackjk.http.sample.service.CorpService;
 import test.bbackjk.http.sample.service.RestService;
 
 
@@ -13,6 +14,7 @@ import test.bbackjk.http.sample.service.RestService;
 public class TestRequestController {
 
     private final RestService restService;
+    private final CorpService corpService;
 
     @GetMapping("/api/v1/hello")
     ResponseEntity<String> hello() {
@@ -73,5 +75,12 @@ public class TestRequestController {
     @GetMapping(value = "/api/v1/hello/post4")
     ResponseEntity<MemberDto> post4() {
         return ResponseEntity.ok(restService.post4());
+    }
+
+
+    @GetMapping(value = "/api/v1/corp1")
+    ResponseEntity<String> corp1() {
+        this.corpService.getAffiliate();
+        return ResponseEntity.ok("hello");
     }
 }

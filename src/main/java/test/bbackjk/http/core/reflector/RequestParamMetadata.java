@@ -58,17 +58,12 @@ class RequestParamMetadata {
         return this.paramClass.isAssignableFrom(List.class);
     }
 
-    // TODO: private 고려
     public boolean isMapType() {
         return this.paramClass.isAssignableFrom(Map.class);
     }
 
-    public boolean isPrimitiveInString() {
-        return ClassUtil.isPrimitiveInString(this.paramClass);
-    }
-
     public boolean isReferenceType() {
-        return !this.isListType() && !this.isMapType() && !this.isPrimitiveInString() && !this.isRestCallback();
+        return !this.isListType() && !this.isMapType() && !ClassUtil.isPrimitiveInString(this.paramClass) && !this.isRestCallback();
     }
 
     public boolean canRequestParam(boolean isOnlyRequestParam, boolean isEmptyAllAnnotation, List<String> pathValueNames) {
@@ -105,7 +100,7 @@ class RequestParamMetadata {
 
     @NotNull
     private String parseParamName(Parameter parameter, Annotation annotation) {
-        if ( this.hasAnnotation() && !RequestBody.class.equals(annotation.annotationType()) ) {
+        if ( annotation != null && !RequestBody.class.equals(annotation.annotationType()) ) {
             String result = null;
             String value = (String) ReflectorUtils.annotationMethodInvoke(annotation, "value");
             String name = (String) ReflectorUtils.annotationMethodInvoke(annotation, "name");

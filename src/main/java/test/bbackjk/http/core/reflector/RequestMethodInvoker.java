@@ -8,13 +8,13 @@ import test.bbackjk.http.core.wrapper.RestCommonResponse;
 
 import java.lang.reflect.Method;
 
-public class RestClientMethodInvoker {
+public class RequestMethodInvoker {
     @Getter
     private final RequestMethodMetadata methodMetadata;
     private final HttpAgent httpAgent;
     private final LogHelper restClientLogger;
 
-    public RestClientMethodInvoker(Class<?> restClientInterface, Method method, HttpAgent httpAgent, String origin, LogHelper restClientLogger) {
+    public RequestMethodInvoker(Class<?> restClientInterface, Method method, HttpAgent httpAgent, String origin, LogHelper restClientLogger) {
         this.methodMetadata = new RequestMethodMetadata(restClientInterface, method, origin);
         this.httpAgent = httpAgent;
         this.restClientLogger = restClientLogger;

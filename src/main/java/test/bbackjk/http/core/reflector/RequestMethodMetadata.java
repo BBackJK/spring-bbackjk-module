@@ -302,13 +302,13 @@ public class RequestMethodMetadata {
         String copyPathname = pathname == null ? "" : pathname;
 
         if (copyOrigin.endsWith("/")) {
-            if ( copyPathname.charAt(0) == '/') {
+            if (copyPathname.startsWith("/")) {
                 return copyOrigin + copyPathname.substring(1);
             } else {
                 return copyOrigin + copyPathname;
             }
         } else {
-            if ( copyPathname.charAt(0) == '/') {
+            if (copyPathname.startsWith("/")) {
                 return copyOrigin + copyPathname;
             } else {
                 if ( copyOrigin.isBlank() && copyPathname.isBlank() ) {
