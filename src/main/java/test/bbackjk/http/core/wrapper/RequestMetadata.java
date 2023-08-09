@@ -44,10 +44,6 @@ public class RequestMetadata {
         this(url, mediaType, new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>(), null, null, restClientLogger);
     }
 
-    public static RequestMetadata ofEmpty(String origin, String pathname, MediaType mediaType, LogHelper restClientLogger) {
-        return new RequestMetadata(getFullUrl(origin, pathname), mediaType, restClientLogger);
-    }
-
     public static RequestMetadata ofEmpty(String requestUrl, MediaType mediaType, LogHelper restClientLogger) {
         return new RequestMetadata(requestUrl, mediaType, restClientLogger);
     }
@@ -63,45 +59,11 @@ public class RequestMetadata {
         return new RequestMetadata(requestUrl, mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger);
     }
 
-    public static RequestMetadata of(
-            String origin, String pathname, MediaType mediaType
-            , Map<String, String> headerValuesMap
-            , Map<String, String> pathValuesMap
-            , Map<String, String> queryValuesMap
-            , Object bodyData, Object[] args
-            , LogHelper restClientLogger
-    ) {
-        return new RequestMetadata(getFullUrl(origin, pathname), mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger);
-    }
-
     public boolean isFormContent() {
         return MediaType.APPLICATION_FORM_URLENCODED.equalsTypeAndSubtype(this.contentType);
     }
 
     public boolean isJsonContent() {
         return MediaType.APPLICATION_JSON.equalsTypeAndSubtype(this.contentType);
-    }
-
-    private static String getFullUrl(String origin, String pathname) {
-        String copyOrigin = origin == null ? "" : origin;
-        String copyPathname = pathname == null ? "" : pathname;
-
-        if (copyOrigin.endsWith("/")) {
-            if ( copyPathname.charAt(0) == '/') {
-                return copyOrigin + copyPathname.substring(1);
-            } else {
-                return copyOrigin + copyPathname;
-            }
-        } else {
-            if ( copyPathname.charAt(0) == '/') {
-                return copyOrigin + copyPathname;
-            } else {
-                if ( copyOrigin.isBlank() && copyPathname.isBlank() ) {
-                    return "";
-                } else {
-                    return copyOrigin + "/" + copyPathname;
-                }
-            }
-        }
     }
 }

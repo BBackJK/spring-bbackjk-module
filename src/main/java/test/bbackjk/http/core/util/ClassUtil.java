@@ -1,6 +1,7 @@
 package test.bbackjk.http.core.util;
 
 import lombok.experimental.UtilityClass;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,9 +41,37 @@ public class ClassUtil extends org.springframework.util.ClassUtils {
         return value.replaceFirst(firstVal, firstVal.toLowerCase());
     }
 
+    @Nullable
+    public String getGetterMethodByFieldName(String fieldName) {
+        return fieldName == null || fieldName.isBlank() ? null : "get"+toPascal(fieldName);
+    }
+
+    @Nullable
     public String getGetterMethodByField(Field field) {
-        if ( field == null ) return "";
-        return "get"+toPascal(field.getName());
+        if ( field == null ) return null;
+        return getGetterMethodByFieldName(field.getName());
+    }
+
+    public List<String> getHasGetterFieldNameByClass(Class<?> clazz) {
+        if ( clazz == null || isPrimitiveInString(clazz) || clazz.isInterface() ) {
+            return Collections.emptyList();
+        }
+        List<String> result = new ArrayList<>();
+        Field[] fields = clazz.getDeclaredFields();
+        int fieldCount = fields.length;
+        for (int i=0; i<fieldCount; i++) {
+            try {
+                Field f = fields[i];
+                String fieldGetterName = getGetterMethodByField(f);
+                if ( fieldGetterName != null ) {
+                    clazz.getMethod(fieldGetterName);
+                    result.add(f.getName());
+                }
+            } catch (NoSuchMethodException e) {
+                // ignore
+            }
+        }
+        return result;
     }
 
     public String toPascal(String value) {

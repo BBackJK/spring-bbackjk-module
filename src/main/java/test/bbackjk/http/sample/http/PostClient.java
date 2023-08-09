@@ -29,7 +29,7 @@ public interface PostClient {
     RestResponse<MemberDto> post31(@RequestBody MemberDto memberDto);
 
     @PostMapping(value = "/api/v1/post3")
-    void post32(@RequestBody MemberDto memberDto, RestCallback<MemberDto> callback);
+    MemberDto post32(@RequestBody MemberDto memberDto, RestCallback<MemberDto> callback);
 
     @PostMapping(value = "/api/v1/post4")
     RestResponse<List<MemberDto>> post4(@RequestBody MemberDto memberDto);

@@ -7,12 +7,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+import test.bbackjk.http.core.interfaces.RestCallback;
 import test.bbackjk.http.core.util.ClassUtil;
 import test.bbackjk.http.core.util.ReflectorUtils;
-import test.bbackjk.http.core.interfaces.RestCallback;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
@@ -23,11 +22,14 @@ class RequestParamMetadata {
 
     private static final List<Class<? extends Annotation>> ALLOWED_PARAMETER_ANNOTATIONS = Stream.of(RequestParam.class, RequestHeader.class, RequestBody.class, PathVariable.class).collect(Collectors.toUnmodifiableList());
     private final Class<?> paramClass;
+    @Getter
+    private final List<String> getterMethodNames;
     private final Annotation annotation;
     @Getter
     private final String paramName;
     public RequestParamMetadata(@NotNull Parameter parameter) {
         this.paramClass = parameter.getType();
+        this.getterMethodNames = ClassUtil.getHasGetterFieldNameByClass(this.paramClass);
         this.annotation = this.parseAnnotation(parameter);
         this.paramName = this.parseParamName(parameter, this.annotation);
     }
@@ -36,27 +38,28 @@ class RequestParamMetadata {
         return RestCallback.class.equals(this.paramClass);
     }
 
-    public boolean isRequestParamAnnotation() {
+    public boolean isAnnotationRequestParam() {
         return this.annotation != null && RequestParam.class.equals(this.annotation.annotationType());
     }
 
-    public boolean isRequestHeaderAnnotation() {
+    public boolean isAnnotationRequestHeader() {
         return this.annotation != null && RequestHeader.class.equals(this.annotation.annotationType());
     }
 
-    public boolean isPathVariableAnnotation() {
+    public boolean isAnnotationPathVariable() {
         return this.annotation != null && PathVariable.class.equals(this.annotation.annotationType());
     }
 
-    public boolean isRequestBodyAnnotation() {
+    public boolean isAnnotationRequestBody() {
         return this.annotation != null && RequestBody.class.equals(this.annotation.annotationType());
     }
 
-    public boolean isList() {
+    public boolean isListType() {
         return this.paramClass.isAssignableFrom(List.class);
     }
 
-    public boolean isMap() {
+    // TODO: private 고려
+    public boolean isMapType() {
         return this.paramClass.isAssignableFrom(Map.class);
     }
 
@@ -64,8 +67,20 @@ class RequestParamMetadata {
         return ClassUtil.isPrimitiveInString(this.paramClass);
     }
 
-    public boolean isReference() {
-        return !this.isList() && !this.isMap() && !this.isPrimitiveInString();
+    public boolean isReferenceType() {
+        return !this.isListType() && !this.isMapType() && !this.isPrimitiveInString() && !this.isRestCallback();
+    }
+
+    public boolean canRequestParam(boolean isOnlyRequestParam, boolean isEmptyAllAnnotation, List<String> pathValueNames) {
+        if ( isOnlyRequestParam ) {
+            return isAnnotationRequestParam();
+        }
+
+        if ( isEmptyAllAnnotation ) {
+            return !pathValueNames.contains(this.paramName);
+        }
+
+        return !this.hasAnnotation() && !pathValueNames.contains(this.paramName) && !this.isRestCallback();
     }
 
     @Nullable
@@ -75,19 +90,6 @@ class RequestParamMetadata {
 
     public boolean hasAnnotation() {
         return this.annotation != null;
-    }
-
-    public boolean hasAllGetterField() {
-        Field[] fields = this.paramClass.getDeclaredFields();
-        int fieldCount = fields.length;
-        for (int i=0; i<fieldCount; i++) {
-            try {
-                this.paramClass.getMethod(ClassUtil.getGetterMethodByField(fields[i]));
-            } catch (NoSuchMethodException e) {
-                return false;
-            }
-        }
-        return true;
     }
 
     @Nullable
@@ -103,7 +105,7 @@ class RequestParamMetadata {
 
     @NotNull
     private String parseParamName(Parameter parameter, Annotation annotation) {
-        if ( this.hasAnnotation() && !this.isRequestBodyAnnotation() ) {
+        if ( this.hasAnnotation() && !RequestBody.class.equals(annotation.annotationType()) ) {
             String result = null;
             String value = (String) ReflectorUtils.annotationMethodInvoke(annotation, "value");
             String name = (String) ReflectorUtils.annotationMethodInvoke(annotation, "name");

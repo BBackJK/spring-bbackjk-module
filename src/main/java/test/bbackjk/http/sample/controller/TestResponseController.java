@@ -14,12 +14,11 @@ import java.util.List;
 @Slf4j
 public class TestResponseController {
 
-    private final int dummySize = 10;
     private final List<MemberDto> dummyMember;
 
     public TestResponseController() {
         this.dummyMember = new ArrayList<>();
-        for (int i=0; i<dummySize; i++) {
+        for (int i=0; i<10; i++) {
             int val = i+1;
             dummyMember.add(MemberDto.of(val, "이름" + val));
         }
@@ -81,9 +80,6 @@ public class TestResponseController {
 
     @PostMapping("/api/v1/post4")
     ResponseEntity<List<MemberDto>> post4(@RequestBody MemberDto findMemberDto) {
-        if ( findMemberDto == null ) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
         MemberDto result = this.dummyMember.stream().filter(m -> m.getId() == findMemberDto.getId()).findFirst().orElseGet(() -> null);
         if ( result == null ) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
