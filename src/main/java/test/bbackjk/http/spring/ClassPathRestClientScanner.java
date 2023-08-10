@@ -38,7 +38,7 @@ class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
     private static final String FACTORY_BEAN_OBJECT_TYPE = "factoryBeanObjectType";
     private static final String DEFAULT_AGENT_CLASS_NAME = "OkHttpAgent";
     private static final String DEFAULT_MAPPER_CLASS_NAME = "DefaultResponseMapper";
-    private final LogHelper logs = LogHelper.of(this.getClass());
+    private static final LogHelper LOGGER = LogHelper.of(ClassPathRestClientScanner.class);
     private final BeanDefinitionRegistry registry;
     private Set<BeanDefinition> httpAgentBeanDefinitionSet;
     private Set<BeanDefinition> responseMapperBeanDefinitionSet;
@@ -158,7 +158,7 @@ class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         Set<BeanDefinition> candidates = new LinkedHashSet<>();
 
         String packageSearchPath = this.getPackageSearchPath(basePackage);
-        this.logs.log("packageSearchPath : {}", packageSearchPath);
+        LOGGER.log("packageSearchPath : {}", packageSearchPath);
         ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
         MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory();
 
@@ -173,7 +173,7 @@ class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
                 }
             }
         } catch (IOException e) {
-            this.logs.err(e.getMessage());
+            LOGGER.err(e.getMessage());
             throw new RestClientCommonException("RestClient 리소스를 읽다가 실패하였습니다.");
         }
 
@@ -181,6 +181,7 @@ class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
     }
 
     /**
+     * TODO: Registrar 클래스로 빼버리기
      * 등록한 BeanDefinition 후처리
      * @param beanDefinitions
      */
@@ -226,7 +227,7 @@ class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
                 httpAgentClass = restClient.agent();
             }
         } catch (ClassNotFoundException e) {
-            this.logs.err(e.getMessage());
+            LOGGER.err(e.getMessage());
             // ignore..
         }
 
@@ -251,7 +252,7 @@ class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
                 responseMapperClass = restClient.mapper();
             }
         } catch (ClassNotFoundException e) {
-            this.logs.err(e.getMessage());
+            LOGGER.err(e.getMessage());
             // ignore..
         }
 
@@ -277,7 +278,7 @@ class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         Annotation restClientAnnotation = restClientClass.getAnnotation(this.annotationClass);
 
         if ( restClientAnnotation == null || restClientAnnotation.annotationType() != RestClient.class) {
-            this.logs.err("restClientAnnotation == null 이거나 Annotation 이 RestClient 가 아닙니다.");
+            LOGGER.err("restClientAnnotation == null 이거나 Annotation 이 RestClient 가 아닙니다.");
             throw new RestClientCommonException("RestClient Bean 을 생성하는데 문제가 발생하였습니다.");
         }
 

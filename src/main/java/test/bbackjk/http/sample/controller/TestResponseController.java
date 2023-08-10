@@ -51,6 +51,11 @@ public class TestResponseController {
         return "test";
     }
 
+    @GetMapping("/api/v1/int")
+    Integer intTest() {
+        return null;
+    }
+
 
     @PostMapping("/api/v1/post1")
     String post1(@RequestBody SampleRequestDto requestDto) {

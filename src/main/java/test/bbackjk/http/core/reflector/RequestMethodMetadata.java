@@ -98,7 +98,7 @@ public class RequestMethodMetadata {
         return this.annotation;
     }
 
-    // TODO :: 리팩토링
+    // TODO : 리팩토링 (RequestMetaValueHandler 객체 추가하여 소스코드 정리.)
     public RequestMetadata applyArgs(Object[] args, LogHelper restClientLogger) {
         if ( args == null || args.length == 0 ) {
             return RequestMetadata.ofEmpty(this.requestUrl, this.contentType, restClientLogger);
@@ -125,12 +125,12 @@ public class RequestMethodMetadata {
                 arg.ifPresent(o -> this.pathValuesMap.put(parameter.getParamName(), String.valueOf(o)));
             } else if ( canRequestParam ) {
                 arg.ifPresent(o -> {
-                    boolean isMap = parameter.isMapType();
+                    boolean isReturnMap = parameter.isMapType();
                     boolean isDetailList = arg.orElse(null) instanceof List;
                     boolean isDetailMap = arg.orElse(null) instanceof Map;
                     if ( isDetailList ) throw new RestClientCallException("RestClient 는 List 타입의 파라미터는 지원하지 않습니다.");
 
-                    if ( isMap || isDetailMap ) {
+                    if ( isReturnMap || isDetailMap ) {
                         Map<?, ?> map = (Map<?, ?>) o;
                         map.forEach((k, v) -> this.queryValuesMap.put(String.valueOf(k), v == null ? null : String.valueOf(v)));
                     } else if ( parameter.isReferenceType() ) {
@@ -186,30 +186,34 @@ public class RequestMethodMetadata {
         return RequestMetadata.of(this.requestUrl, this.contentType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger);
     }
 
-    public boolean isWrap() {
+    public boolean isReturnWrap() {
         return this.returnMetadata.isWrap();
     }
 
-    public boolean isMap() {
+    public boolean isReturnMap() {
         return this.returnMetadata.isWrapMap();
     }
 
-    public boolean isWrapList() {
-        return isWrapList(null);
+    public boolean isReturnList() {
+        return this.returnMetadata.isWrapList();
+    }
+    public boolean isReturnList(Class<?> clazz) {
+        return this.returnMetadata.isWrapList(clazz);
     }
 
-    public boolean isString() {
+    public boolean isReturnString() {
         return this.returnMetadata.isString();
     }
 
-    public boolean isVoid() {
-        return this.returnMetadata.isVoid();
-    }
-
-    public boolean isWrapOptional() {
+    public boolean isReturnOptional() {
         return this.returnMetadata.isWrapOptional();
     }
 
+    public boolean isReturnRestResponse() {
+        return this.returnMetadata.isWrapRestResponse();
+    }
+
+    @Nullable
     public Class<?> getSecondRawType() {
         return this.returnMetadata.getSecondRawType();
     }
@@ -218,14 +222,7 @@ public class RequestMethodMetadata {
         return this.returnMetadata.getRawType();
     }
 
-    public boolean isWrapList(Class<?> clazz) {
-        return this.returnMetadata.isWrapList(clazz);
-    }
-
-    public boolean isWrapRestResponse() {
-        return this.returnMetadata.isWrapRestResponse();
-    }
-
+    @NotNull
     private List<String> getPathVariableNames(String pathname) {
         Matcher matcher = PATH_VARIABLE_PATTERN.matcher(pathname);
         List<String> result = new ArrayList<>();
@@ -235,7 +232,8 @@ public class RequestMethodMetadata {
         }
         return result;
     }
-    
+
+    @NotNull
     private Map<Integer, RequestParamMetadata> getParamMetadataList(Parameter[] parameters) {
         if ( parameters == null ) {
             return Collections.emptyMap();
@@ -402,7 +400,7 @@ public class RequestMethodMetadata {
 
         // 리턴 파입 기본 생성자 추출
         Class<?> returnRawType = this.returnMetadata.getRawType();
-        if ( !returnRawType.isInterface() && !this.returnMetadata.isVoid() && !this.returnMetadata.isWrap() ) {
+        if ( !returnRawType.isInterface() && !this.returnMetadata.isVoid() && !this.returnMetadata.isWrap() && !ClassUtil.isPrimitiveInString(returnRawType) ) {
             try {
                 returnRawType.getConstructor();
             } catch (NoSuchMethodException e) {

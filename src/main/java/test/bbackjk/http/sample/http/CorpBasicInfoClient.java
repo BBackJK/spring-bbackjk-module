@@ -10,6 +10,7 @@ public interface CorpBasicInfoClient {
 
     @GetMapping("/getAffiliate_V2")
     String getAffiliate(@RequestParam CorpBasicAffiliate param);
-//    String getConsSubsComp();
+
+    String getConsSubsComp();
 //    String getCorpOutline();
 }

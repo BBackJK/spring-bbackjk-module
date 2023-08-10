@@ -12,7 +12,7 @@ import test.bbackjk.http.core.wrapper.RequestMetadata;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.helper.LogHelper;
 import test.bbackjk.http.core.interfaces.HttpAgent;
-import test.bbackjk.http.core.wrapper.RestCommonResponse;
+import test.bbackjk.http.core.wrapper.HttpAgentResponse;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -56,31 +56,31 @@ public class OkHttpAgent implements HttpAgent {
 
 
     @Override
-    public RestCommonResponse doGet(RequestMetadata requestMetadata) throws RestClientCallException {
+    public HttpAgentResponse doGet(RequestMetadata requestMetadata) throws RestClientCallException {
         return this.doHttp(requestMetadata, RequestMethod.GET);
     }
 
     @Override
-    public RestCommonResponse doPost(RequestMetadata requestMetadata) throws RestClientCallException {
+    public HttpAgentResponse doPost(RequestMetadata requestMetadata) throws RestClientCallException {
         return this.doHttp(requestMetadata, RequestMethod.POST);
     }
 
     @Override
-    public RestCommonResponse doPatch(RequestMetadata requestMetadata) throws RestClientCallException {
+    public HttpAgentResponse doPatch(RequestMetadata requestMetadata) throws RestClientCallException {
         return this.doHttp(requestMetadata, RequestMethod.PATCH);
     }
 
     @Override
-    public RestCommonResponse doPut(RequestMetadata requestMetadata) throws RestClientCallException {
+    public HttpAgentResponse doPut(RequestMetadata requestMetadata) throws RestClientCallException {
         return this.doHttp(requestMetadata, RequestMethod.PUT);
     }
 
     @Override
-    public RestCommonResponse doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
+    public HttpAgentResponse doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
         return this.doHttp(requestMetadata, RequestMethod.DELETE);
     }
 
-    private RestCommonResponse doHttp(RequestMetadata requestMetadata, RequestMethod requestMethod) throws RestClientCallException {
+    private HttpAgentResponse doHttp(RequestMetadata requestMetadata, RequestMethod requestMethod) throws RestClientCallException {
         boolean isRequestBodyContent = requestMethod == RequestMethod.POST || requestMethod == RequestMethod.PUT || requestMethod == RequestMethod.PATCH;
         RequestBody requestBody = null;
 
@@ -107,7 +107,7 @@ public class OkHttpAgent implements HttpAgent {
             ResponseBody responseBody = result.body();
             String bodyString = responseBody == null ? "" : responseBody.string();
             this.responseLogging(result, logger, bodyString);
-            return new RestCommonResponse(result.code(), bodyString, this.om);
+            return new HttpAgentResponse(result.code(), bodyString, this.om);
         } catch (IOException e) {
             throw new RestClientCallException(e);
         }
@@ -140,19 +140,19 @@ public class OkHttpAgent implements HttpAgent {
             FormBody.Builder builder = new FormBody.Builder();
             map.forEach((k, v) -> builder.add(String.valueOf(k), String.valueOf(v)));
             return builder.build();
-        } else {
-            return RequestBody.create(
-                    om.writeValueAsString(requestMetadata.getBodyData() == null ? new HashMap<>() : requestMetadata.getBodyData())
-                    , MediaType.parse(requestMetadata.getContentType().toString())
-            );
         }
+
+        return RequestBody.create(
+                om.writeValueAsString(requestMetadata.getBodyData() == null ? new HashMap<>() : requestMetadata.getBodyData())
+                , MediaType.parse(requestMetadata.getContentType().toString())
+        );
     }
 
     private void requestLogging(Request request, LogHelper logger) {
         int headerSize = request.headers().size();
 
         logger.log("Request        {}", LOGGING_DELIMITER);
-        logger.log("Request        | Url                 : {} {} ", request.method(), request.url().url().toString(), 0);
+        logger.log("Request        | Url                 : {} {} ", request.method(), request.url().url());
         if (headerSize < 1) {
             logger.log("Request        | Header              : EMPTY");
         } else {

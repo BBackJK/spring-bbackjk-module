@@ -4,10 +4,11 @@ import lombok.Getter;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.helper.LogHelper;
 import test.bbackjk.http.core.interfaces.HttpAgent;
-import test.bbackjk.http.core.wrapper.RestCommonResponse;
+import test.bbackjk.http.core.wrapper.HttpAgentResponse;
 
 import java.lang.reflect.Method;
 
+// TODO: 사용안하는 메소드 정리
 public class RequestMethodInvoker {
     @Getter
     private final RequestMethodMetadata methodMetadata;
@@ -20,8 +21,8 @@ public class RequestMethodInvoker {
         this.restClientLogger = restClientLogger;
     }
 
-    public RestCommonResponse execute(Object[] args) throws RestClientCallException {
-        RestCommonResponse result;
+    public HttpAgentResponse execute(Object[] args) throws RestClientCallException {
+        HttpAgentResponse result;
 
         switch (this.methodMetadata.getRequestMethod()) {
             case GET:
@@ -59,10 +60,6 @@ public class RequestMethodInvoker {
     }
 
     public boolean hasFailHandler() {
-        return this.methodMetadata.isWrapRestResponse() || this.hasRestCallback();
-    }
-
-    private boolean hasRestCallback() {
-        return this.methodMetadata.hasRestCallback();
+        return this.methodMetadata.isReturnRestResponse() || this.methodMetadata.hasRestCallback();
     }
 }

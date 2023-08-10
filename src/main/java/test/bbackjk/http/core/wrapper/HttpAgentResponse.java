@@ -8,22 +8,22 @@ import test.bbackjk.http.core.util.RestClientUtils;
 import java.util.Map;
 
 @Getter
-public class RestCommonResponse {
+public class HttpAgentResponse {
     private static final String DEFAULT_ERROR_MESSAGE = "요청한 서버에서 에러가 발생하였습니다.";
     private final int httpCode;
     private final boolean success;
-    private final String jsonString;
+    private final String stringResponse;
     private final ObjectMapper om;
 
-    public RestCommonResponse(int httpCode, String jsonString, ObjectMapper om) {
-        this(httpCode, RestClientUtils.isSuccess(httpCode), jsonString, om);
-    }
-
-    public RestCommonResponse(int httpCode, boolean success, String jsonString, ObjectMapper om) {
+    private HttpAgentResponse(int httpCode, boolean success, String stringResponse, ObjectMapper om) {
         this.httpCode = httpCode;
         this.success = success;
-        this.jsonString = jsonString;
+        this.stringResponse = stringResponse;
         this.om = om;
+    }
+
+    public HttpAgentResponse(int httpCode, String stringResponse, ObjectMapper om) {
+        this(httpCode, RestClientUtils.isSuccess(httpCode), stringResponse, om);
     }
 
     public String getFailMessage() {
@@ -31,9 +31,9 @@ public class RestCommonResponse {
             return "";
         }
         StringBuilder sb = new StringBuilder(String.valueOf(httpCode));
-        if ( jsonString != null && !jsonString.isBlank() ) {
+        if ( stringResponse != null && !stringResponse.isBlank() ) {
             try {
-                Map<?, ?> jsonMap = this.om.readValue(jsonString, Map.class);
+                Map<?, ?> jsonMap = this.om.readValue(stringResponse, Map.class);
                 String result = DEFAULT_ERROR_MESSAGE;
                 String message = (String) jsonMap.get("message");
                 String msg = (String) jsonMap.get("msg");

@@ -25,6 +25,8 @@ public class RestServiceImpl implements RestService {
 
     @Override
     public String basic() {
+        int val = getClient.intTest();
+        log.info("val :: {}", val);
         return getClient.hello();
     }
 

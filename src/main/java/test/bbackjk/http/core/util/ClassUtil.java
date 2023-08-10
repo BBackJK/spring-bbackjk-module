@@ -12,10 +12,24 @@ import java.util.*;
 
 @UtilityClass
 public class ClassUtil extends org.springframework.util.ClassUtils {
-    
+
+    private final Map<Class<?>, Object> PRIMITIVE_INIT_VALUE_MAP = new IdentityHashMap<>(9);
+
     private final char PACKAGE_SEPARATOR = '.';
     private final char FILE_SEPARATOR = '/';
     private final String FILE_CLASS = ".class";
+
+    static {
+        PRIMITIVE_INIT_VALUE_MAP.put(boolean.class, false);
+        PRIMITIVE_INIT_VALUE_MAP.put(byte.class, (byte)0);
+        PRIMITIVE_INIT_VALUE_MAP.put(char.class, '\u0000');
+        PRIMITIVE_INIT_VALUE_MAP.put(double.class, 0.0d);
+        PRIMITIVE_INIT_VALUE_MAP.put(float.class, 0.0);
+        PRIMITIVE_INIT_VALUE_MAP.put(int.class, 0);
+        PRIMITIVE_INIT_VALUE_MAP.put(long.class, 0L);
+        PRIMITIVE_INIT_VALUE_MAP.put(short.class, (short)0);
+        PRIMITIVE_INIT_VALUE_MAP.put(void.class, null);
+    }
 
     public Set<Class<?>> scanningClassByAnnotation(String packageName, Class<? extends Annotation> annotationClazz) throws IOException, ClassNotFoundException {
         String resourcePath = packageName.replace(PACKAGE_SEPARATOR, FILE_SEPARATOR);
@@ -87,6 +101,11 @@ public class ClassUtil extends org.springframework.util.ClassUtils {
                 Thread.currentThread().getContextClassLoader()
                 , ClassLoader.getSystemClassLoader()
         };
+    }
+
+    public Object getPrimitiveInitValue(Class<?> clazz) {
+        if (!clazz.isPrimitive()) return null;
+        return PRIMITIVE_INIT_VALUE_MAP.get(clazz);
     }
 
     public boolean isPrimitiveInString(Class<?> clazz) {

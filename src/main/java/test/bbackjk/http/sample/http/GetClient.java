@@ -36,4 +36,7 @@ public interface GetClient {
             , @RequestHeader("Authorization") String bearerToken
             , @RequestParam SampleRequestDto requestDto
     );
+
+    @GetMapping("/api/v1/int")
+    int intTest();
 }

@@ -3,17 +3,18 @@ package test.bbackjk.http.core.proxy;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import test.bbackjk.http.core.annotations.RestClient;
+import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.exceptions.RestClientDataMappingException;
 import test.bbackjk.http.core.helper.LogHelper;
 import test.bbackjk.http.core.interfaces.HttpAgent;
 import test.bbackjk.http.core.interfaces.ResponseMapper;
-import test.bbackjk.http.core.reflector.RequestMethodMetadata;
-import test.bbackjk.http.core.util.ObjectUtils;
-import test.bbackjk.http.core.util.RestMapUtils;
-import test.bbackjk.http.core.wrapper.RestCommonResponse;
-import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.interfaces.RestCallback;
 import test.bbackjk.http.core.reflector.RequestMethodInvoker;
+import test.bbackjk.http.core.reflector.RequestMethodMetadata;
+import test.bbackjk.http.core.util.ClassUtil;
+import test.bbackjk.http.core.util.ObjectUtils;
+import test.bbackjk.http.core.util.RestMapUtils;
+import test.bbackjk.http.core.wrapper.HttpAgentResponse;
 import test.bbackjk.http.core.wrapper.RestResponse;
 
 import java.lang.reflect.InvocationHandler;
@@ -50,7 +51,7 @@ class RestClientProxy<T> implements InvocationHandler {
     public Object invoke(Object o, Method method, Object[] args) throws Throwable {
         RequestMethodInvoker mi
                 = RestMapUtils.computeIfAbsent(this.cachedMethod, method, m -> new RequestMethodInvoker(this.restClientInterface, m, this.httpAgent, this.origin, this.restClientLogger));
-        RestCommonResponse response;
+        HttpAgentResponse response;
         try {
             response = mi.execute(args);
         } catch (RestClientCallException e) {
@@ -92,38 +93,40 @@ class RestClientProxy<T> implements InvocationHandler {
         }
     }
 
-    private Object toReturnValues(RequestMethodInvoker invoker, RestCommonResponse response) throws RestClientDataMappingException {
+    // TODO : Class Return Type Handler 객체를 추가하여 소스코드 깔끔히..
+    private Object toReturnValues(RequestMethodInvoker invoker, HttpAgentResponse response) throws RestClientDataMappingException {
         if ( response == null ) {
             return null;
         }
 
         Object result = null;
-        String jsonResult = response.getJsonString();
+        String stringResponse = response.getStringResponse();
         RequestMethodMetadata restClientMethod = invoker.getMethodMetadata();
+        Class<?> returnRawType = restClientMethod.getRawType();
 
-        if (restClientMethod.isWrap() && !ObjectUtils.isEmpty(jsonResult)) {
-            if (restClientMethod.isWrapList() || restClientMethod.isWrapList(restClientMethod.getSecondRawType())) {
-                result = this.dataMapper.converts(jsonResult, restClientMethod.getRawType());
-            } else if (restClientMethod.isMap()) {
-                result = this.dataMapper.convert(jsonResult, Map.class);
+        if (restClientMethod.isReturnWrap() && !ObjectUtils.isEmpty(stringResponse)) {
+            if (restClientMethod.isReturnList() || restClientMethod.isReturnList(restClientMethod.getSecondRawType())) {
+                result = this.dataMapper.converts(stringResponse, returnRawType);
+            } else if (restClientMethod.isReturnMap()) {
+                result = this.dataMapper.convert(stringResponse, Map.class);
             } else {
-                result = this.dataMapper.convert(jsonResult, restClientMethod.getRawType());
+                result = this.dataMapper.convert(stringResponse, returnRawType);
             }
         } else {
-            if (restClientMethod.isString()) {
-                result = jsonResult;
-            } else {
-                result = restClientMethod.isVoid() || ObjectUtils.isEmpty(jsonResult)
-                        ? null
-                        : this.dataMapper.convert(jsonResult, restClientMethod.getRawType());
+            if (returnRawType.isPrimitive()) {
+                result = ClassUtil.getPrimitiveInitValue(returnRawType);
+            } else if (restClientMethod.isReturnString()) {
+                result = stringResponse;
+            } else if (!ObjectUtils.isEmpty(stringResponse)) {
+                result = this.dataMapper.convert(stringResponse, returnRawType);
             }
         }
 
-        if (restClientMethod.isWrapRestResponse()) {
+        if (restClientMethod.isReturnRestResponse()) {
             result = response.isSuccess()
                     ? RestResponse.success(result, response.getHttpCode())
                     : RestResponse.fail(response.getHttpCode(), response.getFailMessage());
-        } else if (restClientMethod.isWrapOptional()) {
+        } else if (restClientMethod.isReturnOptional()) {
             result = Optional.ofNullable(result);
         }
 
@@ -150,10 +153,10 @@ class RestClientProxy<T> implements InvocationHandler {
         String value = restClient.value();
         String context = restClient.context();
 
-        if ( value.isBlank() && context.isBlank() ) {
+        if (value.isBlank() && context.isBlank()) {
             return restClientInterface.getSimpleName();
         } else {
-            if ( !value.isBlank() ) {
+            if (!value.isBlank()) {
                 return String.format("%s#%s", restClientInterface.getSimpleName(), value);
             } else {
                 return String.format("%s#%s", restClientInterface.getSimpleName(), context);
