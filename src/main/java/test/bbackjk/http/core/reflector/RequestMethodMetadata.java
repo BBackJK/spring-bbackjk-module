@@ -400,7 +400,7 @@ public class RequestMethodMetadata {
 
         // 리턴 파입 기본 생성자 추출
         Class<?> returnRawType = this.returnMetadata.getRawType();
-        if ( !returnRawType.isInterface() && !this.returnMetadata.isVoid() && !this.returnMetadata.isWrap() && !ClassUtil.isPrimitiveInString(returnRawType) ) {
+        if ( !returnRawType.isInterface() && !this.returnMetadata.isVoid() && !ClassUtil.isPrimitiveInString(returnRawType) ) {
             try {
                 returnRawType.getConstructor();
             } catch (NoSuchMethodException e) {

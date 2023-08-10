@@ -16,11 +16,9 @@ import java.util.List;
 @Component
 public class DefaultResponseMapper implements ResponseMapper {
     private final ObjectMapper om;
-//    private final ObjectMapper xm;
 
     public DefaultResponseMapper() {
         this.om = new ObjectMapper();
-//        this.xm = new XmlMapper();
     }
 
     @Override

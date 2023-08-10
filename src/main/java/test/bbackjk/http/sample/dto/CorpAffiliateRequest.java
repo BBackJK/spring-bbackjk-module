@@ -5,13 +5,13 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class CorpBasicAffiliate {
+public class CorpAffiliateRequest {
     private final String serviceKey;
     private final String pageNo;
     private final String numOfRows;
     private final String resultType;
 
-    public static CorpBasicAffiliate of(String serviceKey, String resultType) {
-        return new CorpBasicAffiliate(serviceKey, "1", "10", resultType);
+    public static CorpAffiliateRequest of(String serviceKey, String resultType) {
+        return new CorpAffiliateRequest(serviceKey, "1", "10", resultType);
     }
 }

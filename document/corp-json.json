@@ -1,0 +1,24 @@
+{
+  "response": {
+    "body": {
+      "items": {
+        "item": [
+          {
+            "basDt": "20200509",
+            "crno": "1101110000086",
+            "afilCmpyNm": "롯데건설(주)",
+            "afilCmpyCrno": "1101110014764",
+            "lstgYn": ""
+          }
+        ]
+      },
+      "numOfRows": 10,
+      "pageNo": 1,
+      "totalCount": 13563448
+    },
+    "header": {
+      "resultCode": "00",
+      "resultMsg": "NORMAL SERVICE."
+    }
+  }
+}

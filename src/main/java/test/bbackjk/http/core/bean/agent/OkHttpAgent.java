@@ -81,10 +81,9 @@ public class OkHttpAgent implements HttpAgent {
     }
 
     private HttpAgentResponse doHttp(RequestMetadata requestMetadata, RequestMethod requestMethod) throws RestClientCallException {
-        boolean isRequestBodyContent = requestMethod == RequestMethod.POST || requestMethod == RequestMethod.PUT || requestMethod == RequestMethod.PATCH;
         RequestBody requestBody = null;
 
-        if (isRequestBodyContent) {
+        if (RestClientUtils.orEqualsEnum(requestMethod, RequestMethod.POST, RequestMethod.PUT, RequestMethod.PATCH)) {
             try {
                 requestBody = this.getRequestBody(requestMetadata);
             } catch (JsonProcessingException e) {

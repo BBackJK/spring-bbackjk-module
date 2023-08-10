@@ -110,7 +110,7 @@ class RestClientProxy<T> implements InvocationHandler {
             } else if (restClientMethod.isReturnMap()) {
                 result = this.dataMapper.convert(stringResponse, Map.class);
             } else {
-                result = this.dataMapper.convert(stringResponse, returnRawType);
+                result = this.dataMapper.convert(stringResponse, restClientMethod.getSecondRawType());
             }
         } else {
             if (returnRawType.isPrimitive()) {
