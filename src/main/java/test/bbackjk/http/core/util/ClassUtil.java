@@ -67,7 +67,7 @@ public class ClassUtil extends org.springframework.util.ClassUtils {
     }
 
     public List<String> getHasGetterFieldNameByClass(Class<?> clazz) {
-        if ( clazz == null || isPrimitiveInString(clazz) || clazz.isInterface() ) {
+        if ( clazz == null || isPrimitiveOrString(clazz) || clazz.isInterface() ) {
             return Collections.emptyList();
         }
         List<String> result = new ArrayList<>();
@@ -103,12 +103,12 @@ public class ClassUtil extends org.springframework.util.ClassUtils {
         };
     }
 
-    public Object getPrimitiveInitValue(Class<?> clazz) {
+    public Object getTypeInitValue(Class<?> clazz) {
         if (!clazz.isPrimitive()) return null;
         return PRIMITIVE_INIT_VALUE_MAP.get(clazz);
     }
 
-    public boolean isPrimitiveInString(Class<?> clazz) {
+    public boolean isPrimitiveOrString(Class<?> clazz) {
         return clazz != null && (isPrimitiveOrWrapper(clazz) || String.class.equals(clazz));
     }
 

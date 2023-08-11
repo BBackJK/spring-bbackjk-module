@@ -63,7 +63,7 @@ class RequestParamMetadata {
     }
 
     public boolean isReferenceType() {
-        return !this.isListType() && !this.isMapType() && !ClassUtil.isPrimitiveInString(this.paramClass) && !this.isRestCallback();
+        return !this.isListType() && !this.isMapType() && !ClassUtil.isPrimitiveOrString(this.paramClass) && !this.isRestCallback();
     }
 
     public boolean canRequestParam(boolean isOnlyRequestParam, boolean isEmptyAllAnnotation, List<String> pathValueNames) {

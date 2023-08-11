@@ -35,6 +35,9 @@ dependencies {
     implementation group: 'jakarta.xml.bind', name: 'jakarta.xml.bind-api', version: '4.0.0'
     // https://mvnrepository.com/artifact/com.sun.xml.bind/jaxb-impl
     implementation group: 'com.sun.xml.bind', name: 'jaxb-impl', version: '4.0.3'
+    // https://mvnrepository.com/artifact/jakarta.activation/jakarta.activation-api
+    implementation group: 'jakarta.activation', name: 'jakarta.activation-api', version: '2.1.2'
+
 }
 
 tasks.named('test') {

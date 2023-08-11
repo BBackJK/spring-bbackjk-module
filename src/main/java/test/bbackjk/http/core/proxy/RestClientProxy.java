@@ -49,8 +49,9 @@ class RestClientProxy<T> implements InvocationHandler {
 
     @Override
     public Object invoke(Object o, Method method, Object[] args) throws Throwable {
-        RequestMethodInvoker mi
-                = RestMapUtils.computeIfAbsent(this.cachedMethod, method, m -> new RequestMethodInvoker(this.restClientInterface, m, this.httpAgent, this.origin, this.restClientLogger));
+        RequestMethodInvoker mi = RestMapUtils.computeIfAbsent(this.cachedMethod, method, m -> {
+                                    return new RequestMethodInvoker(this.restClientInterface, m, this.httpAgent, this.origin, this.restClientLogger);
+                                });
         HttpAgentResponse response;
         try {
             response = mi.execute(args);
@@ -104,21 +105,26 @@ class RestClientProxy<T> implements InvocationHandler {
         RequestMethodMetadata restClientMethod = invoker.getMethodMetadata();
         Class<?> returnRawType = restClientMethod.getRawType();
 
-        if (restClientMethod.isReturnWrap() && !ObjectUtils.isEmpty(stringResponse)) {
-            if (restClientMethod.isReturnList() || restClientMethod.isReturnList(restClientMethod.getSecondRawType())) {
-                result = this.dataMapper.converts(stringResponse, returnRawType);
-            } else if (restClientMethod.isReturnMap()) {
-                result = this.dataMapper.convert(stringResponse, Map.class);
+        if (ObjectUtils.isEmpty(stringResponse)) {
+            result = ClassUtil.getTypeInitValue(returnRawType);
+        } else if (invoker.isXmlAccept()) {
+            // xml 일 경우
+            result = this.dataMapper.toXml(stringResponse, returnRawType);
+        } else if (!restClientMethod.isReturnVoid()) {
+            if (restClientMethod.isReturnWrap()) {
+                if (restClientMethod.isReturnList() || restClientMethod.isReturnList(restClientMethod.getSecondRawType())) {
+                    result = this.dataMapper.converts(stringResponse, returnRawType);
+                } else if (restClientMethod.isReturnMap()) {
+                    result = this.dataMapper.convert(stringResponse, Map.class);
+                } else {
+                    result = this.dataMapper.convert(stringResponse, restClientMethod.getSecondRawType(), returnRawType);
+                }
             } else {
-                result = this.dataMapper.convert(stringResponse, restClientMethod.getSecondRawType());
-            }
-        } else {
-            if (returnRawType.isPrimitive()) {
-                result = ClassUtil.getPrimitiveInitValue(returnRawType);
-            } else if (restClientMethod.isReturnString()) {
-                result = stringResponse;
-            } else if (!ObjectUtils.isEmpty(stringResponse)) {
-                result = this.dataMapper.convert(stringResponse, returnRawType);
+                if ( restClientMethod.isReturnString() ) {
+                    result = stringResponse;
+                } else {
+                    result = this.dataMapper.convert(stringResponse, returnRawType);
+                }
             }
         }
 

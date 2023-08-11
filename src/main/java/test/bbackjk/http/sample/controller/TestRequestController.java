@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import test.bbackjk.http.sample.dto.CorpAffiliateResponse;
+import test.bbackjk.http.sample.dto.CorpAffiliateXmlResponse;
 import test.bbackjk.http.sample.dto.MemberDto;
 import test.bbackjk.http.sample.service.CorpService;
 import test.bbackjk.http.sample.service.RestService;
@@ -77,10 +79,17 @@ public class TestRequestController {
         return ResponseEntity.ok(restService.post4());
     }
 
-
     @GetMapping(value = "/api/v1/corp1")
-    ResponseEntity<String> corp1() {
-        this.corpService.getAffiliate();
-        return ResponseEntity.ok("hello");
+    ResponseEntity<CorpAffiliateResponse> corp1() {
+        return ResponseEntity.ok(
+                this.corpService.getAffiliateJson()
+        );
+    }
+
+    @GetMapping(value = "/api/v1/corp2")
+    ResponseEntity<CorpAffiliateXmlResponse> corp2() {
+        return ResponseEntity.ok(
+                this.corpService.getAffiliateXml()
+        );
     }
 }

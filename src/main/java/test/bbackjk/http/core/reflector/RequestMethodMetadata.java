@@ -204,6 +204,9 @@ public class RequestMethodMetadata {
     public boolean isReturnString() {
         return this.returnMetadata.isString();
     }
+    public boolean isReturnVoid() {
+        return this.returnMetadata.isVoid();
+    }
 
     public boolean isReturnOptional() {
         return this.returnMetadata.isWrapOptional();
@@ -400,7 +403,7 @@ public class RequestMethodMetadata {
 
         // 리턴 파입 기본 생성자 추출
         Class<?> returnRawType = this.returnMetadata.getRawType();
-        if ( !returnRawType.isInterface() && !this.returnMetadata.isVoid() && !ClassUtil.isPrimitiveInString(returnRawType) ) {
+        if ( !returnRawType.isInterface() && !this.returnMetadata.isVoid() && !ClassUtil.isPrimitiveOrString(returnRawType) ) {
             try {
                 returnRawType.getConstructor();
             } catch (NoSuchMethodException e) {

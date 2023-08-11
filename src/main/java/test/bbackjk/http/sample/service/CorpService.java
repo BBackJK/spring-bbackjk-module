@@ -1,6 +1,11 @@
 package test.bbackjk.http.sample.service;
 
+import test.bbackjk.http.sample.dto.CorpAffiliateResponse;
+import test.bbackjk.http.sample.dto.CorpAffiliateXmlResponse;
+
 public interface CorpService {
 
-    void getAffiliate();
+    CorpAffiliateResponse getAffiliateJson();
+
+    CorpAffiliateXmlResponse getAffiliateXml();
 }
