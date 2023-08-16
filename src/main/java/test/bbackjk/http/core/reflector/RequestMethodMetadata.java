@@ -17,7 +17,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -59,11 +58,10 @@ public class RequestMethodMetadata {
     // PATH_VARIABLE_PATTERN 으로 찾은 argument name 목록
     private final List<String> pathValueNames;
 
-//    private final ParameterArgumentHandler argumentHandler;
-
-    private final Map<String, String> headerValuesMap = new ConcurrentHashMap<>();
-    private final Map<String, String> pathValuesMap = new ConcurrentHashMap<>();
-    private final Map<String, String> queryValuesMap = new ConcurrentHashMap<>();
+    private final ArgumentPresetMetadata<Map<String, String>> headerValuePreset = new MapArgumentPreset();
+    private final ArgumentPresetMetadata<Map<String, String>> pathValuePreset = new MapArgumentPreset();
+    private final ArgumentPresetMetadata<Map<String, String>> queryValuePreset = new MapArgumentPreset();
+    private final ArgumentPresetMetadata<Object> bodyValuePreset = new ObjectPreset();
 
     public RequestMethodMetadata(Method method) {
         Class<?> restClientInterface = method.getDeclaringClass();
@@ -120,33 +118,36 @@ public class RequestMethodMetadata {
             throw new RestClientCallException();
         }
 
-        List<Object> requestBodyList = new ArrayList<>();
+        int bodyCount = 0;
         for (int i=0; i<argCount; i++) {
             Optional<Object> arg = Optional.ofNullable(args[i]);
             ParameterArgumentHandler handler = this.parameterArgumentHandlerMap.get(i);
             if ( handler != null ) {
-                handler.handle(
-                        this.headerValuesMap
-                        , this.pathValuesMap
-                        , this.queryValuesMap
-                        , requestBodyList
-                        , arg
-                );
+                Class<? extends ParameterArgumentHandler> handlerType = handler.getClass();
+                if (handlerType.equals(HeaderValueArgumentHandler.class)) {
+                    handler.handle(headerValuePreset, arg);
+                } else if (handlerType.equals(PathValueArgumentHandler.class)) {
+                    handler.handle(pathValuePreset, arg);
+                } else if (handlerType.equals(QueryValueArgumentHandler.class)) {
+                    handler.handle(queryValuePreset, arg);
+                } else if (handlerType.equals(BodyDataArgumentHandler.class)) {
+                    bodyCount++;
+                    handler.handle(bodyValuePreset, arg);
+                }
             }
         }
 
-        if ( requestBodyList.size() > 1 ) {
+        if ( bodyCount > 1 ) {
             LOGGER.warn("Request Body 로 인식되는 파라미터가 1개 이상입니다.");
-            LOGGER.warn("Request Body : {}", requestBodyList);
         }
 
         return RequestMetadata.of(
                 this.getRequestUrl(origin, this.pathname)
                 , this.contentType
-                , this.headerValuesMap
-                , this.pathValuesMap
-                , this.queryValuesMap
-                , requestBodyList.isEmpty() ? null : requestBodyList.get(requestBodyList.size() - 1)
+                , this.headerValuePreset.get()
+                , this.pathValuePreset.get()
+                , this.queryValuePreset.get()
+                , this.bodyValuePreset.get()
                 , args
                 , restClientLogger);
     }

@@ -21,7 +21,7 @@ class QueryValueArgumentHandler implements ParameterArgumentHandler {
     }
 
     @Override
-    public void handle(Map<String, String> headerValue, Map<String, String> pathValue, Map<String, String> queryValue, List<Object> bodyDataList, Optional<Object> arg) throws RestClientCallException {
+    public void handle(ArgumentPresetMetadata<?> preset, Optional<Object> arg) {
         arg.ifPresent(o -> {
             boolean isCollection = o instanceof Collection;
             boolean isMap = o instanceof Map;
@@ -32,7 +32,7 @@ class QueryValueArgumentHandler implements ParameterArgumentHandler {
 
             if (isMap) {
                 Map<?, ?> map = (Map<?, ?>) o;
-                map.forEach((k, v) -> queryValue.put(String.valueOf(k), v == null ? null : String.valueOf(v)));
+                map.forEach((k, v) -> preset.set(String.valueOf(k), v == null ? null : String.valueOf(v)));
             } else if (this.metadata.isReferenceType()) {
                 MethodInvoker mi = new MethodInvoker();
                 mi.setTargetObject(o);
@@ -44,7 +44,7 @@ class QueryValueArgumentHandler implements ParameterArgumentHandler {
                             mi.prepare();
                             Object v = mi.invoke();
                             if ( v != null ) {
-                                queryValue.put(fieldName, String.valueOf(v));
+                                preset.set(fieldName, String.valueOf(v));
                             }
                         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
                                  IllegalAccessException e) {
@@ -53,7 +53,7 @@ class QueryValueArgumentHandler implements ParameterArgumentHandler {
                     }
                 }
             } else {
-                queryValue.put(metadata.getParamName(), String.valueOf(o));
+                preset.set(metadata.getParamName(), String.valueOf(o));
             }
         });
     }

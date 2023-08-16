@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-public class TestRequestController {
+public class SampleRequestController {
 
     private final RestService restService;
     private final CorpService corpService;

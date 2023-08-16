@@ -12,11 +12,11 @@ import java.util.List;
 
 @RestController
 @Slf4j
-public class TestResponseController {
+public class SampleResponseController {
 
     private final List<MemberDto> dummyMember;
 
-    public TestResponseController() {
+    public SampleResponseController() {
         this.dummyMember = new ArrayList<>();
         for (int i=0; i<10; i++) {
             int val = i+1;

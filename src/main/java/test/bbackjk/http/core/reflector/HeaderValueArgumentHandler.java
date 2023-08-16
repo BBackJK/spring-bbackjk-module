@@ -1,9 +1,5 @@
 package test.bbackjk.http.core.reflector;
 
-import test.bbackjk.http.core.exceptions.RestClientCallException;
-
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 class HeaderValueArgumentHandler implements ParameterArgumentHandler {
@@ -15,7 +11,7 @@ class HeaderValueArgumentHandler implements ParameterArgumentHandler {
     }
 
     @Override
-    public void handle(Map<String, String> headerValue, Map<String, String> pathValue, Map<String, String> queryValue, List<Object> bodyDataList, Optional<Object> arg) throws RestClientCallException {
-        arg.ifPresent(o -> headerValue.put(this.metadata.getParamName(), String.valueOf(o)));
+    public void handle(ArgumentPresetMetadata<?> preset, Optional<Object> arg) {
+        arg.ifPresent(o -> preset.set(this.metadata.getParamName(), String.valueOf(o)));
     }
 }
