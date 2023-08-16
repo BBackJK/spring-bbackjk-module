@@ -23,6 +23,8 @@ public class RestServiceImpl implements RestService {
     private final GetClient getClient;
     private final PostClient postClient;
 
+    private static final String TEMP = "TEMP!!!";
+
     @Override
     public String basic() {
         int val = getClient.intTest();
@@ -89,8 +91,15 @@ public class RestServiceImpl implements RestService {
                     MemberDto.of(5, null)
                     , new RestCallback<MemberDto>() {
                         @Override
+                        public boolean isAsync() {
+                            return false;
+                        }
+
+                        @Override
                         public void onSuccess(int httpCode, MemberDto data) {
                             log.info("code :: {}, data :: {}", httpCode, data);
+                            String val = TEMP;
+                            log.info(val);
 
                             // Do SomeThing...
                         }
@@ -141,5 +150,10 @@ public class RestServiceImpl implements RestService {
         return result != null && !result.isEmpty()
                 ? result.get(0)
                 : null;
+    }
+
+    @Override
+    public List<MemberDto> post5() {
+        return this.postClient.post5(MemberDto.of(5, null));
     }
 }

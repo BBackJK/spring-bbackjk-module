@@ -23,15 +23,17 @@ public class RequestMetadata {
     private final LogHelper restClientLogger;
 
     public RequestMetadata(
-            String url, MediaType mediaType
+            String url
+            , MediaType contentType
             , Map<String, String> headerValuesMap
             , Map<String, String> pathValuesMap
             , Map<String, String> queryValuesMap
-            , @Nullable Object bodyData, @Nullable Object[] args
+            , @Nullable Object bodyData
+            , @Nullable Object[] args
             , LogHelper restClientLogger
     ) {
         this.url = url;
-        this.contentType = mediaType;
+        this.contentType = contentType;
         this.headerValuesMap = headerValuesMap;
         this.pathValuesMap = pathValuesMap;
         this.queryValuesMap = queryValuesMap;
@@ -44,26 +46,24 @@ public class RequestMetadata {
         this(url, mediaType, new LinkedHashMap<>(), new LinkedHashMap<>(), new LinkedHashMap<>(), null, null, restClientLogger);
     }
 
-    public static RequestMetadata ofEmpty(String requestUrl, MediaType mediaType, LogHelper restClientLogger) {
+    public static RequestMetadata of(String requestUrl, MediaType mediaType, LogHelper restClientLogger) {
         return new RequestMetadata(requestUrl, mediaType, restClientLogger);
     }
 
     public static RequestMetadata of(
-            String requestUrl, MediaType mediaType
+            String requestUrl
+            , MediaType contentType
             , Map<String, String> headerValuesMap
             , Map<String, String> pathValuesMap
             , Map<String, String> queryValuesMap
-            , Object bodyData, Object[] args
+            , Object bodyData
+            , Object[] args
             , LogHelper restClientLogger
     ) {
-        return new RequestMetadata(requestUrl, mediaType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger);
+        return new RequestMetadata(requestUrl, contentType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger);
     }
 
     public boolean isFormContent() {
         return MediaType.APPLICATION_FORM_URLENCODED.equalsTypeAndSubtype(this.contentType);
-    }
-
-    public boolean isJsonContent() {
-        return MediaType.APPLICATION_JSON.equalsTypeAndSubtype(this.contentType);
     }
 }

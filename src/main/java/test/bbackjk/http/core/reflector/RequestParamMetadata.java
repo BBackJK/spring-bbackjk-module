@@ -13,6 +13,7 @@ import test.bbackjk.http.core.util.ReflectorUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Parameter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -20,13 +21,14 @@ import java.util.stream.Stream;
 
 class RequestParamMetadata {
 
-    private static final List<Class<? extends Annotation>> ALLOWED_PARAMETER_ANNOTATIONS = Stream.of(RequestParam.class, RequestHeader.class, RequestBody.class, PathVariable.class).collect(Collectors.toUnmodifiableList());
+    private static final List<Class<? extends Annotation>> ALLOWED_PARAMETER_ANNOTATIONS = Collections.unmodifiableList(Stream.of(RequestParam.class, RequestHeader.class, RequestBody.class, PathVariable.class).collect(Collectors.toList()));
     private final Class<?> paramClass;
     @Getter
     private final List<String> getterMethodNames;
     private final Annotation annotation;
     @Getter
     private final String paramName;
+
     public RequestParamMetadata(@NotNull Parameter parameter) {
         this.paramClass = parameter.getType();
         this.getterMethodNames = ClassUtil.getHasGetterFieldNameByClass(this.paramClass);
@@ -104,9 +106,9 @@ class RequestParamMetadata {
             String result = null;
             String value = (String) ReflectorUtils.annotationMethodInvoke(annotation, "value");
             String name = (String) ReflectorUtils.annotationMethodInvoke(annotation, "name");
-            if ( name != null && !name.isBlank() ) {
+            if ( name != null && !name.isEmpty() ) {
                 result = name;
-            } else if ( value != null && !value.isBlank() ) {
+            } else if ( value != null && !value.isEmpty() ) {
                 result = value;
             }
             return result == null ? parameter.getName() : result;

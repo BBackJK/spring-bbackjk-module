@@ -12,7 +12,7 @@ import test.bbackjk.http.core.wrapper.RequestMetadata;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.helper.LogHelper;
 import test.bbackjk.http.core.interfaces.HttpAgent;
-import test.bbackjk.http.core.wrapper.HttpAgentResponse;
+import test.bbackjk.http.core.wrapper.ResponseMetadata;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -56,31 +56,31 @@ public class OkHttpAgent implements HttpAgent {
 
 
     @Override
-    public HttpAgentResponse doGet(RequestMetadata requestMetadata) throws RestClientCallException {
+    public ResponseMetadata doGet(RequestMetadata requestMetadata) throws RestClientCallException {
         return this.doHttp(requestMetadata, RequestMethod.GET);
     }
 
     @Override
-    public HttpAgentResponse doPost(RequestMetadata requestMetadata) throws RestClientCallException {
+    public ResponseMetadata doPost(RequestMetadata requestMetadata) throws RestClientCallException {
         return this.doHttp(requestMetadata, RequestMethod.POST);
     }
 
     @Override
-    public HttpAgentResponse doPatch(RequestMetadata requestMetadata) throws RestClientCallException {
+    public ResponseMetadata doPatch(RequestMetadata requestMetadata) throws RestClientCallException {
         return this.doHttp(requestMetadata, RequestMethod.PATCH);
     }
 
     @Override
-    public HttpAgentResponse doPut(RequestMetadata requestMetadata) throws RestClientCallException {
+    public ResponseMetadata doPut(RequestMetadata requestMetadata) throws RestClientCallException {
         return this.doHttp(requestMetadata, RequestMethod.PUT);
     }
 
     @Override
-    public HttpAgentResponse doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
+    public ResponseMetadata doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
         return this.doHttp(requestMetadata, RequestMethod.DELETE);
     }
 
-    private HttpAgentResponse doHttp(RequestMetadata requestMetadata, RequestMethod requestMethod) throws RestClientCallException {
+    private ResponseMetadata doHttp(RequestMetadata requestMetadata, RequestMethod requestMethod) throws RestClientCallException {
         RequestBody requestBody = null;
 
         if (RestClientUtils.orEqualsEnum(requestMethod, RequestMethod.POST, RequestMethod.PUT, RequestMethod.PATCH)) {
@@ -106,7 +106,7 @@ public class OkHttpAgent implements HttpAgent {
             ResponseBody responseBody = result.body();
             String bodyString = responseBody == null ? "" : responseBody.string();
             this.responseLogging(result, logger, bodyString);
-            return new HttpAgentResponse(result.code(), bodyString, this.om);
+            return new ResponseMetadata(result.code(), bodyString, result.header(RestClientUtils.HEADER_CONTENT_TYPE_KEY));
         } catch (IOException e) {
             throw new RestClientCallException(e);
         }

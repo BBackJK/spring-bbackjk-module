@@ -9,6 +9,8 @@ import java.util.Map;
 @UtilityClass
 public class RestClientUtils {
 
+    public final String HEADER_CONTENT_TYPE_KEY = "Content-Type";
+
     public boolean isSuccess(int httpCode) {
         return httpCode / 100 == 2;
     }
@@ -23,10 +25,6 @@ public class RestClientUtils {
             result = result.replaceAll("\\{" + x.getKey() + "}", x.getValue());
         }
         return result;
-    }
-
-    public <T> T orElse(T origin, T replace) {
-        return origin == null ? replace : origin;
     }
 
     public boolean orEqualsEnum(Enum<?> target, Enum<?>... enums) {

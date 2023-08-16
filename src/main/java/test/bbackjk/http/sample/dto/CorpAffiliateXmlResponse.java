@@ -1,12 +1,12 @@
 package test.bbackjk.http.sample.dto;
 
-import jakarta.xml.bind.annotation.XmlElement;
-import jakarta.xml.bind.annotation.XmlRootElement;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
 
 @Getter
@@ -28,12 +28,6 @@ public class CorpAffiliateXmlResponse {
         @XmlElement(name = "resultMsg")
         private String resultMsg;
     }
-
-//    @Getter
-//    @ToString
-//    public class CorpResponse {
-//
-//    }
 
     @Getter
     @NoArgsConstructor

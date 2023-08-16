@@ -5,7 +5,7 @@ import test.bbackjk.http.core.configuration.RestClientConnectProperties;
 import test.bbackjk.http.core.wrapper.RequestMetadata;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.interfaces.HttpAgent;
-import test.bbackjk.http.core.wrapper.HttpAgentResponse;
+import test.bbackjk.http.core.wrapper.ResponseMetadata;
 
 
 @Component
@@ -18,27 +18,27 @@ public class RestTemplateAgent implements HttpAgent {
 
 
     @Override
-    public HttpAgentResponse doGet(RequestMetadata requestMetadata) throws RestClientCallException {
+    public ResponseMetadata doGet(RequestMetadata requestMetadata) throws RestClientCallException {
         return null;
     }
 
     @Override
-    public HttpAgentResponse doPost(RequestMetadata requestMetadata) throws RestClientCallException {
+    public ResponseMetadata doPost(RequestMetadata requestMetadata) throws RestClientCallException {
         return null;
     }
 
     @Override
-    public HttpAgentResponse doPatch(RequestMetadata requestMetadata) throws RestClientCallException {
+    public ResponseMetadata doPatch(RequestMetadata requestMetadata) throws RestClientCallException {
         return null;
     }
 
     @Override
-    public HttpAgentResponse doPut(RequestMetadata requestMetadata) throws RestClientCallException {
+    public ResponseMetadata doPut(RequestMetadata requestMetadata) throws RestClientCallException {
         return null;
     }
 
     @Override
-    public HttpAgentResponse doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
+    public ResponseMetadata doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
         return null;
     }
 }

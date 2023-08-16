@@ -10,6 +10,8 @@ import test.bbackjk.http.sample.dto.MemberDto;
 import test.bbackjk.http.sample.service.CorpService;
 import test.bbackjk.http.sample.service.RestService;
 
+import java.util.List;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -77,6 +79,11 @@ public class TestRequestController {
     @GetMapping(value = "/api/v1/hello/post4")
     ResponseEntity<MemberDto> post4() {
         return ResponseEntity.ok(restService.post4());
+    }
+
+    @GetMapping(value = "/api/v1/hello/post5")
+    ResponseEntity<List<MemberDto>> post5() {
+        return ResponseEntity.ok(restService.post5());
     }
 
     @GetMapping(value = "/api/v1/corp1")

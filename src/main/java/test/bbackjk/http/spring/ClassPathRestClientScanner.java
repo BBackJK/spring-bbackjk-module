@@ -191,7 +191,7 @@ class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         for ( BeanDefinitionHolder holder : beanDefinitions ) {
             definition = (AbstractBeanDefinition) holder.getBeanDefinition();
             String beanClassName = definition.getBeanClassName();
-            if ( beanClassName == null || beanClassName.isBlank() ) continue;
+            if ( beanClassName == null || beanClassName.isEmpty() ) continue;
 
             // RestClientProxyFactoryBean 생성자에 Interface Class 주입
             definition.getConstructorArgumentValues().addGenericArgumentValue(beanClassName);
@@ -266,11 +266,11 @@ class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
         return result;
     }
 
-    /**
+    /*
      * RestClient Bean Class Name 으로부터 Class 를 가져와서 RestClient Annotation 을 가져온다.
      */
     private RestClient getRestClientAnnotation(String restClientBeanClassName, ClassLoader[] classLoaders) throws ClassNotFoundException {
-        if ( restClientBeanClassName == null || restClientBeanClassName.isBlank() ) {
+        if ( restClientBeanClassName == null || restClientBeanClassName.isEmpty() ) {
             return null;
         }
 

@@ -4,7 +4,6 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.http.MediaType;
-import org.springframework.util.MethodInvoker;
 import org.springframework.web.bind.annotation.*;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.exceptions.RestClientCommonException;
@@ -15,7 +14,6 @@ import test.bbackjk.http.core.util.RestMapUtils;
 import test.bbackjk.http.core.wrapper.RequestMetadata;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
@@ -26,42 +24,68 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class RequestMethodMetadata {
-    private static final List<Class<? extends Annotation>> ALLOWED_REQUEST_MAPPING_ANNOTATIONS = Stream.of(RequestMapping.class, GetMapping.class, PostMapping.class, PatchMapping.class, PutMapping.class, DeleteMapping.class).collect(Collectors.toUnmodifiableList());
+    private static final List<Class<? extends Annotation>> ALLOWED_REQUEST_MAPPING_ANNOTATIONS = Collections.unmodifiableList(Stream.of(RequestMapping.class, GetMapping.class, PostMapping.class, PatchMapping.class, PutMapping.class, DeleteMapping.class).collect(Collectors.toList()));
     private static final Pattern PATH_VARIABLE_PATTERN = Pattern.compile("\\{[a-z|0-9]+}");
     private static final LogHelper LOGGER = LogHelper.of(RequestMethodMetadata.class);
 
+    // Method 어노테이션 :: ALLOWED_REQUEST_MAPPING_ANNOTATIONS 중 하나
     private final Annotation annotation;
-    private final Map<Integer, RequestParamMetadata> parameterMetadataMap;
+
+    // k :: argument 순서, v :: argument 메타데이터 핸들러
+    private final Map<Integer, ParameterArgumentHandler> parameterArgumentHandlerMap;
+
+    // RestCallback 인 argument 메타데이터 목록
     private final List<RequestParamMetadata> restCallbackParameterList;
+
+    // Method 가 RequestParam 어노테이션을 가지고 있는지.
     private final boolean hasRequestParamAnnotation;
+
+    // Method 의 모든 Argument 가 어노테이션이 하나도 없는지.
     private final boolean emptyAllParameterAnnotation;
+
+    // Method 의 Return Metadata
     private final RequestReturnMetadata returnMetadata;
+
+    // Method 의 Http Method
     @Getter
     private final RequestMethod requestMethod;
-    private final String requestUrl;
+
+    // Method 의 pathname
+    private final String pathname;
+
+    // Method 의 consumes 로 파싱한 contentType
     private final MediaType contentType;
-    private final MediaType accept;
+
+    // PATH_VARIABLE_PATTERN 으로 찾은 argument name 목록
     private final List<String> pathValueNames;
+
+//    private final ParameterArgumentHandler argumentHandler;
 
     private final Map<String, String> headerValuesMap = new ConcurrentHashMap<>();
     private final Map<String, String> pathValuesMap = new ConcurrentHashMap<>();
     private final Map<String, String> queryValuesMap = new ConcurrentHashMap<>();
 
-    public RequestMethodMetadata(Class<?> restClientInterface, Method method, String origin) {
+    public RequestMethodMetadata(Method method) {
+        Class<?> restClientInterface = method.getDeclaringClass();
+        Map<Integer, RequestParamMetadata> parameterMetadataMap = RestMapUtils.toReadonly(this.getParamMetadataList(method.getParameters()));
         this.annotation = this.parseAnnotation(method);
-        this.parameterMetadataMap = RestMapUtils.toReadonly(this.getParamMetadataList(method.getParameters()));
-        this.hasRequestParamAnnotation = this.parameterMetadataMap.values().stream().anyMatch(RequestParamMetadata::isAnnotationRequestParam);
-        this.emptyAllParameterAnnotation = this.parameterMetadataMap.values().stream().noneMatch(RequestParamMetadata::hasAnnotation);
-        this.restCallbackParameterList = this.parameterMetadataMap.values().stream().filter(RequestParamMetadata::isRestCallback).collect(Collectors.toUnmodifiableList());
+        this.hasRequestParamAnnotation = parameterMetadataMap.values().stream().anyMatch(RequestParamMetadata::isAnnotationRequestParam);
+        this.emptyAllParameterAnnotation = parameterMetadataMap.values().stream().noneMatch(RequestParamMetadata::hasAnnotation);
+        this.restCallbackParameterList = Collections.unmodifiableList(parameterMetadataMap.values().stream().filter(RequestParamMetadata::isRestCallback).collect(Collectors.toList()));
         this.requestMethod = this.parseRequestMethodByAnnotation(this.annotation);
-        String pathname = this.parsePathNameByAnnotation(this.annotation);
-        this.requestUrl = this.getRequestUrl(origin, pathname);
+        this.pathname = this.parsePathNameByAnnotation(this.annotation);
         this.contentType = this.parseContentTypeByAnnotation(this.annotation);
-        this.accept = this.parseAcceptByAnnotation(this.annotation);
-        this.pathValueNames = this.getPathVariableNames(pathname);
+        this.pathValueNames = this.getPathVariableNames(this.pathname);
         this.returnMetadata = new RequestReturnMetadata(method);
+        this.parameterArgumentHandlerMap = parameterMetadataMap
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey
+                        , entry -> ParameterArgumentHandlerFactory.getHandler(entry.getValue(), this.isOnlyRequestParam(), emptyAllParameterAnnotation, pathValueNames)
+                ));
 
-        this.valid(restClientInterface, method);
+        this.valid(this.getValidErrorContext(restClientInterface, method), parameterMetadataMap);
     }
 
     public boolean isCanHasRequestBodyAnnotation() {
@@ -78,103 +102,36 @@ public class RequestMethodMetadata {
         return MediaType.APPLICATION_FORM_URLENCODED.equalsTypeAndSubtype(this.contentType);
     }
 
-    public boolean isXmlAccept() {
-        return MediaType.APPLICATION_XML.equalsTypeAndSubtype(this.accept);
-    }
-
-    public boolean isJsonContent() {
-        return MediaType.APPLICATION_JSON.equalsTypeAndSubtype(this.contentType);
-    }
-
     public boolean isHasPathValue() {
-        return PATH_VARIABLE_PATTERN.matcher(this.requestUrl).find();
-    }
-
-    public int getParamCount() {
-        return this.parameterMetadataMap.size();
+        return !pathValueNames.isEmpty();
     }
 
     public Annotation getAnnotation() {
         return this.annotation;
     }
 
-    // TODO : 리팩토링 (RequestMetaValueHandler 객체 추가하여 소스코드 정리.)
-    public RequestMetadata applyArgs(Object[] args, LogHelper restClientLogger) {
+    public RequestMetadata applyArgs(Object[] args, LogHelper restClientLogger, String origin) {
         if ( args == null || args.length == 0 ) {
-            return RequestMetadata.ofEmpty(this.requestUrl, this.contentType, restClientLogger);
+            return RequestMetadata.of(this.getRequestUrl(origin, this.pathname), this.contentType, restClientLogger);
         }
 
-        boolean isOnlyRequestParam = (this.isFormContent() && this.isCanHasRequestBodyAnnotation()) || this.hasRequestParamAnnotation;
-
-        Object bodyData = null;
         int argCount = args.length;
+        if ( argCount != this.parameterArgumentHandlerMap.size() ) {
+            throw new RestClientCallException();
+        }
+
         List<Object> requestBodyList = new ArrayList<>();
         for (int i=0; i<argCount; i++) {
             Optional<Object> arg = Optional.ofNullable(args[i]);
-            RequestParamMetadata parameter = Optional.ofNullable(this.parameterMetadataMap.get(i)).orElseThrow(
-                    () -> new RestClientCallException(" Parameter 가 존재하지 않습니다. ")
-            );
-
-            boolean isRequestHeader = parameter.isAnnotationRequestHeader();
-            boolean isPathVariable = parameter.isAnnotationPathVariable();
-            boolean canRequestParam = parameter.canRequestParam(isOnlyRequestParam, this.emptyAllParameterAnnotation, this.pathValueNames);
-
-            if ( isRequestHeader ) {
-                arg.ifPresent(o -> this.headerValuesMap.put(parameter.getParamName(), String.valueOf(o)));
-            } else if ( isPathVariable ) {
-                arg.ifPresent(o -> this.pathValuesMap.put(parameter.getParamName(), String.valueOf(o)));
-            } else if ( canRequestParam ) {
-                arg.ifPresent(o -> {
-                    boolean isReturnMap = parameter.isMapType();
-                    boolean isDetailList = arg.orElse(null) instanceof List;
-                    boolean isDetailMap = arg.orElse(null) instanceof Map;
-                    if ( isDetailList ) throw new RestClientCallException("RestClient 는 List 타입의 파라미터는 지원하지 않습니다.");
-
-                    if ( isReturnMap || isDetailMap ) {
-                        Map<?, ?> map = (Map<?, ?>) o;
-                        map.forEach((k, v) -> this.queryValuesMap.put(String.valueOf(k), v == null ? null : String.valueOf(v)));
-                    } else if ( parameter.isReferenceType() ) {
-                        MethodInvoker mi = new MethodInvoker();
-                        mi.setTargetObject(o);
-                        List<String> getterMethods = parameter.getGetterMethodNames();
-                        for ( String fieldName : getterMethods ) {
-                            if ( fieldName != null ) {
-                                try {
-                                    mi.setTargetMethod(ClassUtil.getGetterMethodByFieldName(fieldName));
-                                    mi.prepare();
-                                    Object v = mi.invoke();
-                                    if ( v != null ) {
-                                        this.queryValuesMap.put(fieldName, String.valueOf(v));
-                                    }
-                                } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
-                                         IllegalAccessException e) {
-                                    // ignore..
-                                }
-                            }
-                        }
-                    } else {
-                        this.queryValuesMap.put(parameter.getParamName(), String.valueOf(o));
-                    }
-                });
-            } else {
-                boolean isRestCallback = parameter.isRestCallback();
-                boolean isDetailRestCallback = arg.orElse(null) instanceof Map;
-                if ( isRestCallback || isDetailRestCallback ) {
-                    continue;
-                }
-
-                requestBodyList.add(arg.orElse(null));
-
-                if ( this.isFormContent() && this.isCanHasRequestBodyAnnotation() ) {
-                    if ( parameter.hasAnnotation() ) {
-                        throw new RestClientCallException("ContentType 이 x-www-urlencoded 인 경우, FormData 로 보낼 파라미터에 Annotation 이 존재해서는 안됩니다.");
-                    }
-                } else {
-                    if (!parameter.isAnnotationRequestBody()) {
-                        throw new RestClientCallException("ContentType 이 x-www-urlencoded 이 아닌 경우, BodyData 로 보낼 파라미터에 @RequestBody 어노테이션은 필수입니다.");
-                    }
-                }
-                if ( arg.isPresent() ) bodyData = arg.get();
+            ParameterArgumentHandler handler = this.parameterArgumentHandlerMap.get(i);
+            if ( handler != null ) {
+                handler.handle(
+                        this.headerValuesMap
+                        , this.pathValuesMap
+                        , this.queryValuesMap
+                        , requestBodyList
+                        , arg
+                );
             }
         }
 
@@ -183,7 +140,15 @@ public class RequestMethodMetadata {
             LOGGER.warn("Request Body : {}", requestBodyList);
         }
 
-        return RequestMetadata.of(this.requestUrl, this.contentType, headerValuesMap, pathValuesMap, queryValuesMap, bodyData, args, restClientLogger);
+        return RequestMetadata.of(
+                this.getRequestUrl(origin, this.pathname)
+                , this.contentType
+                , this.headerValuesMap
+                , this.pathValuesMap
+                , this.queryValuesMap
+                , requestBodyList.isEmpty() ? null : requestBodyList.get(requestBodyList.size() - 1)
+                , args
+                , restClientLogger);
     }
 
     public boolean isReturnWrap() {
@@ -194,16 +159,10 @@ public class RequestMethodMetadata {
         return this.returnMetadata.isWrapMap();
     }
 
-    public boolean isReturnList() {
-        return this.returnMetadata.isWrapList();
-    }
-    public boolean isReturnList(Class<?> clazz) {
-        return this.returnMetadata.isWrapList(clazz);
-    }
-
     public boolean isReturnString() {
         return this.returnMetadata.isString();
     }
+
     public boolean isReturnVoid() {
         return this.returnMetadata.isVoid();
     }
@@ -312,7 +271,7 @@ public class RequestMethodMetadata {
             if (copyPathname.startsWith("/")) {
                 return copyOrigin + copyPathname;
             } else {
-                if ( copyOrigin.isBlank() && copyPathname.isBlank() ) {
+                if ( copyOrigin.isEmpty() && copyPathname.isEmpty() ) {
                     return "";
                 } else {
                     return copyOrigin + "/" + copyPathname;
@@ -342,49 +301,33 @@ public class RequestMethodMetadata {
         }
     }
 
-    @NotNull
-    private MediaType parseAcceptByAnnotation(@Nullable Annotation annotation) {
-        MediaType defaultContentType = MediaType.APPLICATION_JSON;
-        if ( annotation == null ) {
-            return defaultContentType;
-        }
-        String[] accepts = (String[]) ReflectorUtils.annotationMethodInvoke(annotation, "produces");
-        if ( accepts == null || accepts.length < 1 ) {
-            return defaultContentType;
-        }
-
-        String firstAccept = accepts[0];
-        String[] acceptSplit = firstAccept.split("/");
-        try {
-            return new MediaType(acceptSplit[0], acceptSplit[1]);
-        } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
-            LOGGER.warn("Annotation 으로부터 accept 을 파싱하다 실패하였습니다. 원인 :: {}", e.getMessage());
-            return defaultContentType;
-        }
+    private boolean isOnlyRequestParam() {
+        return (this.isFormContent() && this.isCanHasRequestBodyAnnotation()) || this.hasRequestParamAnnotation;
     }
 
-    protected void valid(Class<?> restClientInterface, Method m) {
-        String errorContextFormat = String.format("%s#%s", restClientInterface.getSimpleName(), m.getName());
-        // List 파라미터가 있는 지 확인
-        boolean hasListParameter = this.parameterMetadataMap.values().stream().anyMatch(RequestParamMetadata::isListType);
+    private String getValidErrorContext(Class<?> restClientInterface, Method m) {
+        return String.format("%s#%s", restClientInterface.getSimpleName(), m.getName());
+    }
+
+    private void valid(String errorContext, Map<Integer, RequestParamMetadata> parameterMetadataMap) {
+        // 1. List 파라미터가 있는 지 확인
+        boolean hasListParameter = parameterMetadataMap.values().stream().anyMatch(RequestParamMetadata::isListType);
         if ( hasListParameter ) {
-            throw new RestClientCommonException(String.format("[%s] RestClient 는 List 타입의 파라미터를 지원하지 않습니다.", errorContextFormat));
+            throw new RestClientCommonException(String.format("[%s] RestClient 는 List 타입의 파라미터를 지원하지 않습니다.", errorContext));
         }
 
-        // Request Body 수 확인
-        boolean isOnlyRequestParam = (this.isFormContent() && this.isCanHasRequestBodyAnnotation()) || this.hasRequestParamAnnotation;
-
-        long requestBodyCount = this.parameterMetadataMap.values().stream().filter(p -> {
+        // 2. Request Body 수 확인
+        long requestBodyCount = parameterMetadataMap.values().stream().filter(p -> {
             boolean isRequestHeader = p.isAnnotationRequestHeader();
             boolean isPathVariable = p.isAnnotationPathVariable();
-            boolean canRequestParam = p.canRequestParam(isOnlyRequestParam, this.emptyAllParameterAnnotation, this.pathValueNames);
+            boolean canRequestParam = p.canRequestParam(this.isOnlyRequestParam(), this.emptyAllParameterAnnotation, this.pathValueNames);
             boolean isRestCallback = p.isRestCallback();
             return !isRequestHeader && !isPathVariable && !canRequestParam && !isRestCallback;
         }).count();
 
-        // GET, DELETE 인데 requestBody 로 판단되는 파라미터가 1개 이상이라면..
+        // 3. GET, DELETE 인데 requestBody 로 판단되는 파라미터가 1개 이상이라면..
         if ( !this.isCanHasRequestBodyAnnotation() && requestBodyCount > 0 ) {
-            StringBuilder errMessage = new StringBuilder(String.format("[%s] RequestBody 를 가질 수 없는 Method 입니다.", errorContextFormat));
+            StringBuilder errMessage = new StringBuilder(String.format("[%s] RequestBody 를 가질 수 없는 Method 입니다.", errorContext));
             if ( this.isHasPathValue() && !this.pathValueNames.isEmpty() ) {
                 errMessage.append("\n");
                 errMessage.append(" - PathVariable 을 Url 에 선언한 경우, @PathVariable 어노테이션은 필수 입니다.");
@@ -396,19 +339,24 @@ public class RequestMethodMetadata {
             throw new RestClientCommonException(errMessage.toString());
         }
 
-        // POST, PUT, DELETE 인데 RequestBody 로 판단되는 파라미터가 1개가 아니라면..
+        // 4. POST, PUT, DELETE 인데 RequestBody 로 판단되는 파라미터가 1개가 아니라면..
         if ( this.isCanHasRequestBodyAnnotation() && ( requestBodyCount != 1 )) {
-                throw new RestClientCommonException(String.format("[%s] POST, PUT, PATCH RequestMethod 는 MediaType 이 application/json 일 경우, RequestBody 1개는 필수 이여야 합니다. RequestBody 수 %d", errorContextFormat, requestBodyCount));
+                throw new RestClientCommonException(String.format("[%s] POST, PUT, PATCH RequestMethod 는 MediaType 이 application/json 일 경우, RequestBody 1개는 필수 이여야 합니다. RequestBody 수 %d", errorContext, requestBodyCount));
         }
 
-        // 리턴 파입 기본 생성자 추출
+        // 5. 리턴 파입 기본 생성자 추출
         Class<?> returnRawType = this.returnMetadata.getRawType();
         if ( !returnRawType.isInterface() && !this.returnMetadata.isVoid() && !ClassUtil.isPrimitiveOrString(returnRawType) ) {
             try {
                 returnRawType.getConstructor();
             } catch (NoSuchMethodException e) {
-                throw new RestClientCommonException(String.format("[%s] 리턴 타입 %s 는 기본 생성자가 있어야 ResponseMapper 로 변환 가능 합니다.", errorContextFormat, returnRawType.getSimpleName()));
+                throw new RestClientCommonException(String.format("[%s] 리턴 타입 %s 는 기본 생성자가 있어야 ResponseMapper 로 변환 가능 합니다.", errorContext, returnRawType.getSimpleName()));
             }
+        }
+
+        // 6. RestResponse 와 RestCallback 은 같이 사용 X
+        if (this.returnMetadata.isWrapRestResponse() && !this.restCallbackParameterList.isEmpty()) {
+            throw new RestClientCommonException(String.format("[%s] RestClient 는 Return RestResponse 와 Argument RestCallback 의 병합 사용을 지원하지 않습니다.", errorContext));
         }
     }
 

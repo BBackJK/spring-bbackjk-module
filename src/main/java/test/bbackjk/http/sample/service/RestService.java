@@ -2,6 +2,8 @@ package test.bbackjk.http.sample.service;
 
 import test.bbackjk.http.sample.dto.MemberDto;
 
+import java.util.List;
+
 public interface RestService {
 
     String basic();
@@ -20,4 +22,5 @@ public interface RestService {
     MemberDto post31();
 
     MemberDto post4();
+    List<MemberDto> post5();
 }

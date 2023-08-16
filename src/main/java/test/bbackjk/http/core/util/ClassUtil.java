@@ -48,7 +48,7 @@ public class ClassUtil extends org.springframework.util.ClassUtils {
     }
 
     public String toCamel(String value) {
-        if ( value == null || value.isBlank() ) {
+        if ( value == null || value.isEmpty() ) {
             return "";
         }
         String firstVal = value.substring(0, 1);
@@ -57,7 +57,7 @@ public class ClassUtil extends org.springframework.util.ClassUtils {
 
     @Nullable
     public String getGetterMethodByFieldName(String fieldName) {
-        return fieldName == null || fieldName.isBlank() ? null : "get"+toPascal(fieldName);
+        return fieldName == null || fieldName.isEmpty() ? null : "get"+toPascal(fieldName);
     }
 
     @Nullable
@@ -89,7 +89,7 @@ public class ClassUtil extends org.springframework.util.ClassUtils {
     }
 
     public String toPascal(String value) {
-        if ( value == null || value.isBlank() ) {
+        if ( value == null || value.isEmpty() ) {
             return "";
         }
         String firstVal = value.substring(0, 1);

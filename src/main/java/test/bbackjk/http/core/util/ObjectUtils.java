@@ -18,7 +18,7 @@ public class ObjectUtils {
             return ((String) value).isEmpty();
         }
         if (value instanceof Optional) {
-            return ((Optional<?>) value).isEmpty();
+            return !((Optional<?>) value).isPresent();
         }
         if (value instanceof CharSequence) {
             return ((CharSequence) value).length() == 0;
@@ -34,5 +34,9 @@ public class ObjectUtils {
         }
         // else
         return false;
+    }
+
+    public boolean isNotEmpty(Object value) {
+        return !isEmpty(value);
     }
 }

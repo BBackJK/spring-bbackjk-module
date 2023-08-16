@@ -33,4 +33,7 @@ public interface PostClient {
 
     @PostMapping(value = "/api/v1/post4")
     RestResponse<List<MemberDto>> post4(@RequestBody MemberDto memberDto);
+
+    @PostMapping(value = "/api/v1/post4")
+    List<MemberDto> post5(@RequestBody MemberDto memberDto);
 }
