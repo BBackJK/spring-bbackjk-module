@@ -38,12 +38,12 @@ class RestClientProxy<T> implements InvocationHandler {
         this.httpAgent = httpAgent;
         this.dataMapper = dataMapper;
         this.cachedMethod = cachedMethod;
-        this.initCachedMethodHandlerByMethod(restClientInterface.getMethods(), httpAgent);
+        this.initCachedMethodHandlerByMethod(restClientInterface.getMethods(), httpAgent, dataMapper);
     }
 
     @Override
     public Object invoke(Object o, Method method, Object[] args) throws Throwable {
-        RestClientInvoker invoker = RestMapUtils.computeIfAbsent(this.cachedMethod, method, m -> new RestClientInvoker(m, this.httpAgent));
+        RestClientInvoker invoker = RestMapUtils.computeIfAbsent(this.cachedMethod, method, m -> new RestClientInvoker(m, this.httpAgent, this.dataMapper));
         ResponseMetadata response;
         try {
             response = invoker.invoke(args, this.restClient.url());
@@ -58,7 +58,7 @@ class RestClientProxy<T> implements InvocationHandler {
         Object result = null;
 
         try {
-            result = this.toReturnValues(invoker.getMethodMetadata(), response);
+            result = invoker.getRestReturnValueResolver().resolve(response);
         } catch (RestClientDataMappingException e) {
             LOGGER.err(e.getMessage());
             throw new RestClientCallException();
@@ -70,57 +70,14 @@ class RestClientProxy<T> implements InvocationHandler {
         return result;
     }
 
-    private void initCachedMethodHandlerByMethod(Method[] methods, HttpAgent httpAgent) {
+    private void initCachedMethodHandlerByMethod(Method[] methods, HttpAgent httpAgent, ResponseMapper dataMapper) {
         if ( this.cachedMethod.isEmpty() && methods != null ) {
             int methodCount = methods.length;
             for (int i=0; i<methodCount; i++) {
                 Method m = methods[i];
-                this.cachedMethod.put(m, new RestClientInvoker(m, httpAgent));
+                this.cachedMethod.put(m, new RestClientInvoker(m, httpAgent, dataMapper));
             }
         }
-    }
-
-    // TODO : Class Return Type Handler 객체를 추가하여 소스코드 깔끔히..
-    private Object toReturnValues(RequestMethodMetadata restClientMethod, ResponseMetadata response) throws RestClientDataMappingException {
-        if ( response == null ) {
-            return null;
-        }
-
-        Object result = null;
-        String stringResponse = response.getStringResponse();
-        Class<?> returnRawType = restClientMethod.getRawType();
-
-        if (ObjectUtils.isEmpty(stringResponse)) {
-            result = ClassUtil.getTypeInitValue(returnRawType);
-        } else if (response.isXml()) {
-            // xml 일 경우
-            result = this.dataMapper.toXml(stringResponse, returnRawType);
-        } else if (!restClientMethod.isReturnVoid()) {
-            if (restClientMethod.isReturnWrap()) {
-                if (restClientMethod.isReturnMap()) {
-                    result = this.dataMapper.convert(stringResponse, Map.class);
-                } else {
-                    result = this.dataMapper.convert(stringResponse, restClientMethod.getSecondRawType(), returnRawType);
-                }
-            } else {
-                if ( restClientMethod.isReturnString() ) {
-                    result = stringResponse;
-                } else {
-                    result = this.dataMapper.convert(stringResponse, returnRawType);
-                }
-            }
-        }
-
-        // wrapping 해주는 return value 들
-        if (restClientMethod.isReturnRestResponse()) {
-            result = response.isSuccess()
-                    ? RestResponse.success(result, response.getHttpCode())
-                    : RestResponse.fail(response.getHttpCode(), response.getFailMessage());
-        } else if (restClientMethod.isReturnOptional()) {
-            result = Optional.ofNullable(result);
-        }
-
-        return result;
     }
 
     @Nullable

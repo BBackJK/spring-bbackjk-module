@@ -6,7 +6,9 @@ import test.bbackjk.http.core.annotations.RestClient;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.helper.LogHelper;
 import test.bbackjk.http.core.interfaces.HttpAgent;
+import test.bbackjk.http.core.interfaces.ResponseMapper;
 import test.bbackjk.http.core.reflector.RequestMethodMetadata;
+import test.bbackjk.http.core.reflector.ReturnValueResolver;
 
 import java.lang.reflect.Method;
 
@@ -15,13 +17,17 @@ public class RestClientInvoker {
     private final RequestMethodMetadata methodMetadata;
     private final HttpAgent httpAgent;
     private final LogHelper restClientLogger;
+    @Getter
+    @NotNull
+    private final ReturnValueResolver restReturnValueResolver;
 
-    public RestClientInvoker(Method method, HttpAgent httpAgent) {
+    public RestClientInvoker(Method method, HttpAgent httpAgent, ResponseMapper dataMapper) {
         Class<?> restClientInterface = method.getDeclaringClass();
         RestClient restClient = restClientInterface.getAnnotation(RestClient.class);
         this.methodMetadata = new RequestMethodMetadata(method);
         this.httpAgent = httpAgent;
         this.restClientLogger = LogHelper.of(this.getRestClientLogContext(restClientInterface, restClient, method));
+        this.restReturnValueResolver = new ReturnValueResolver(this.methodMetadata, dataMapper);
     }
 
     public ResponseMetadata invoke(Object[] args, String origin) throws RestClientCallException {
