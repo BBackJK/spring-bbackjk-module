@@ -40,19 +40,21 @@ public class RestClientPostBeanDefinitionProcessor extends AbstractPostBeanDefin
         this.defaultHttpAgentBeanDefinition = this.getDefaultHttpAgentBeanDefinition(httpAgentBeanDefinitionSet, basePackage);
         this.defaultResponseMapperBeanDefinition = this.getDefaultResponseMapperBeanDefinition(responseMapperBeanDefinitionSet, basePackage);
         if ( this.defaultHttpAgentBeanDefinition == null || this.defaultResponseMapperBeanDefinition == null ) {
-            throw new RestClientCommonException(String.format("%s %s 를 찾을 수 없습니다.", DEFAULT_AGENT_CLASS_NAME, DEFAULT_MAPPER_CLASS_NAME));
+            throw new RestClientCommonException(String.format("%s, %s 를 찾을 수 없습니다.", DEFAULT_AGENT_CLASS_NAME, DEFAULT_MAPPER_CLASS_NAME));
         }
     }
 
     @Override
     protected void postProcess(AbstractBeanDefinition definition) {
         String beanClassName = definition.getBeanClassName();
-        // RestClientProxyFactoryBean 생성자에 Interface Class 주입
-        definition.getConstructorArgumentValues().addGenericArgumentValue(beanClassName);
-        // RestClientProxyFactoryBean 생성자에 HttpAgent Bean 주입
-        definition.getConstructorArgumentValues().addGenericArgumentValue(this.findHttpAgentBeanDefinition(beanClassName));
-        // RestClientProxyFactoryBean 생성자에 ResponseMapper Bean 주입
-        definition.getConstructorArgumentValues().addGenericArgumentValue(this.findResponseMapperBeanDefinition(beanClassName));
+        if ( beanClassName != null ) {
+            // RestClientProxyFactoryBean 생성자에 Interface Class 주입
+            definition.getConstructorArgumentValues().addGenericArgumentValue(beanClassName);
+            // RestClientProxyFactoryBean 생성자에 HttpAgent Bean 주입
+            definition.getConstructorArgumentValues().addGenericArgumentValue(this.findHttpAgentBeanDefinition(beanClassName));
+            // RestClientProxyFactoryBean 생성자에 ResponseMapper Bean 주입
+            definition.getConstructorArgumentValues().addGenericArgumentValue(this.findResponseMapperBeanDefinition(beanClassName));
+        }
     }
 
     @Nullable

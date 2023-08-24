@@ -262,23 +262,21 @@ public class RequestMethodMetadata {
         String copyOrigin = origin == null ? "" : origin;
         String copyPathname = pathname == null ? "" : pathname;
 
-        if (copyOrigin.endsWith("/")) {
-            if (copyPathname.startsWith("/")) {
-                return copyOrigin + copyPathname.substring(1);
-            } else {
-                return copyOrigin + copyPathname;
+        if (copyOrigin.isEmpty() && copyPathname.isEmpty()) {
+            throw new RestClientCallException("호출할 URL 이 존재하지 않습니다");
+        }
+
+        if (!copyOrigin.isEmpty()) {
+            if (copyOrigin.endsWith("/")) {
+                copyOrigin = copyOrigin.substring(copyOrigin.length() - 1);
             }
-        } else {
-            if (copyPathname.startsWith("/")) {
-                return copyOrigin + copyPathname;
-            } else {
-                if ( copyOrigin.isEmpty() && copyPathname.isEmpty() ) {
-                    return "";
-                } else {
-                    return copyOrigin + "/" + copyPathname;
-                }
+
+            if (!copyPathname.startsWith("/")) {
+                copyPathname = String.format("/%s", copyPathname);
             }
         }
+
+        return copyOrigin + copyPathname;
     }
 
     @NotNull

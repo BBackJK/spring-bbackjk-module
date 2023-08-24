@@ -150,39 +150,39 @@ public class OkHttpAgent implements HttpAgent {
     private void requestLogging(Request request, LogHelper logger) {
         int headerSize = request.headers().size();
 
-        logger.log("Request        {}", LOGGING_DELIMITER);
-        logger.log("Request        | Url                 : {} {} ", request.method(), request.url().url());
+        logger.log("Request\t\t{}", LOGGING_DELIMITER);
+        logger.log("Request\t\t| Url\t\t\t\t: {} {} ", request.method(), request.url().url());
         if (headerSize < 1) {
-            logger.log("Request        | Header              : EMPTY");
+            logger.log("Request\t\t| Header\t\t\t: EMPTY");
         } else {
             request.headers().iterator()
-                    .forEachRemaining(h -> logger.log("Request        | Header               : {} - {}", h.component1(), h.component2()));
+                    .forEachRemaining(h -> logger.log("Request\t\t| Header\t\t\t: {} - {}", h.component1(), h.component2()));
         }
 
         if (request.body() != null) {
             try (Buffer bf = new Buffer()) {
                 request.body().writeTo(bf);
-                logger.log("Request        | Body                : {}", bf.readString(Charset.defaultCharset()));
-                logger.log("Request        | Content-Type        : {}", request.body().contentType());
+                logger.log("Request\t\t| Body\t\t\t\t: {}", bf.readString(Charset.defaultCharset()));
+                logger.log("Request\t\t| Content-Type\t\t: {}", request.body().contentType());
             } catch (IOException e) {
                 // ignore...
             }
         }
-        logger.log("Request        {}", LOGGING_DELIMITER);
+        logger.log("Request\t\t{}", LOGGING_DELIMITER);
     }
 
     private void responseLogging(Response response, LogHelper logger, String jsonString) {
         int headerSize = response.headers().size();
 
-        logger.log("Response       {}", LOGGING_DELIMITER);
-        logger.log("Response       | Protocol - Millis   : {} - {} ms", response.protocol(), response.receivedResponseAtMillis() - response.sentRequestAtMillis());
-        logger.log("Response       | Data(JsonString)    : {}", jsonString);
+        logger.log("Response\t\t{}", LOGGING_DELIMITER);
+        logger.log("Response\t\t| Protocol - Millis\t: {} - {} ms", response.protocol(), response.receivedResponseAtMillis() - response.sentRequestAtMillis());
+        logger.log("Response\t\t| Data(String)\t\t: {}", jsonString);
         if (headerSize < 1) {
-            logger.log("Response       | Header             : EMPTY");
+            logger.log("Response\t\t| Header\t\t\t: EMPTY");
         } else {
             response.headers().iterator()
-                    .forEachRemaining(h -> logger.log("Response       | Header              : {} - {}", h.component1(), h.component2()));
+                    .forEachRemaining(h -> logger.log("Response\t\t| Header\t\t\t: {} - {}", h.component1(), h.component2()));
         }
-        logger.log("Response       {}", LOGGING_DELIMITER);
+        logger.log("Response\t\t{}", LOGGING_DELIMITER);
     }
 }
