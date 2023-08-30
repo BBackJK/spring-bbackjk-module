@@ -2,6 +2,7 @@ package test.bbackjk.http.core.wrapper;
 
 
 import lombok.Getter;
+import lombok.ToString;
 import test.bbackjk.http.core.functional.MultiConsumer;
 
 import java.util.Optional;
@@ -9,6 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Getter
+@ToString
 public class RestResponse<T> {
 
     private final T data;

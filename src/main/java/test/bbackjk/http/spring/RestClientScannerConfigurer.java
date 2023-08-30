@@ -1,7 +1,6 @@
 package test.bbackjk.http.spring;
 
 import lombok.Setter;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.InitializingBean;
@@ -11,6 +10,7 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProce
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.lang.NonNull;
 import org.springframework.util.StringUtils;
 import test.bbackjk.http.core.interfaces.HttpAgent;
 import test.bbackjk.http.core.interfaces.ResponseMapper;
@@ -27,7 +27,7 @@ class RestClientScannerConfigurer implements InitializingBean, ApplicationContex
     private String beanName;
 
     @Override // BeanDefinitionRegistryPostProcessor 의 implements
-    public void postProcessBeanDefinitionRegistry(@NotNull BeanDefinitionRegistry registry) throws BeansException {
+    public void postProcessBeanDefinitionRegistry(@NonNull BeanDefinitionRegistry registry) throws BeansException {
         ClassPathRestClientScanner scanner = new ClassPathRestClientScanner(registry);
         scanner.setBasePackage(this.basePackage);
         scanner.setAnnotationClass(this.annotationClass);
@@ -38,7 +38,7 @@ class RestClientScannerConfigurer implements InitializingBean, ApplicationContex
     }
 
     @Override
-    public void postProcessBeanFactory(@NotNull ConfigurableListableBeanFactory beanFactory) throws BeansException {
+    public void postProcessBeanFactory(@NonNull ConfigurableListableBeanFactory beanFactory) throws BeansException {
         // NOP
     }
 

@@ -5,11 +5,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import test.bbackjk.http.core.annotations.RestClient;
+import test.bbackjk.http.core.bean.agent.UnirestHttpAgent;
 import test.bbackjk.http.sample.dto.SampleRequestDto;
 
 import java.util.Map;
 
-@RestClient(value = "Hello", url = "http://localhost:8080")
+@RestClient(value = "Hello", url = "http://localhost:8080", agent = UnirestHttpAgent.class)
 public interface GetClient {
 
     @GetMapping("/api/v1/hello2")

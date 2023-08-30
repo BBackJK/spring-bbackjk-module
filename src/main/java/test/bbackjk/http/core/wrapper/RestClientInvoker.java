@@ -1,7 +1,7 @@
 package test.bbackjk.http.core.wrapper;
 
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
+import org.springframework.lang.NonNull;
 import test.bbackjk.http.core.annotations.RestClient;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.helper.LogHelper;
@@ -18,7 +18,7 @@ public class RestClientInvoker {
     private final HttpAgent httpAgent;
     private final LogHelper restClientLogger;
     @Getter
-    @NotNull
+    @NonNull
     private final ReturnValueResolver restReturnValueResolver;
 
     public RestClientInvoker(Method method, HttpAgent httpAgent, ResponseMapper dataMapper) {
@@ -60,7 +60,7 @@ public class RestClientInvoker {
         return this.methodMetadata.isReturnRestResponse() || this.methodMetadata.hasRestCallback() || this.methodMetadata.isReturnOptional();
     }
 
-    @NotNull
+    @NonNull
     private String getRestClientLogContext(Class<?> restClientInterface, RestClient restClient, Method m) {
         String value = restClient.value();
         String context = restClient.context();

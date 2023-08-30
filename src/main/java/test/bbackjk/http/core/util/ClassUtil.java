@@ -1,7 +1,7 @@
 package test.bbackjk.http.core.util;
 
 import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.Nullable;
+import org.springframework.lang.Nullable;
 
 import java.io.File;
 import java.io.IOException;

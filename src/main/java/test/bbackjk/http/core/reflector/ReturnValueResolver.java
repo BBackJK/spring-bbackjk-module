@@ -1,5 +1,6 @@
 package test.bbackjk.http.core.reflector;
 
+import lombok.extern.slf4j.Slf4j;
 import test.bbackjk.http.core.interfaces.ResponseMapper;
 import test.bbackjk.http.core.util.ClassUtil;
 import test.bbackjk.http.core.util.ObjectUtils;
@@ -9,6 +10,7 @@ import test.bbackjk.http.core.wrapper.RestResponse;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 public class ReturnValueResolver {
     private final RequestMethodMetadata restClientMethod;
     private final ResponseMapper dataMapper;
@@ -18,6 +20,7 @@ public class ReturnValueResolver {
         this.dataMapper = dataMapper;
     }
 
+    // TODO: Refactoring
     public Object resolve(ResponseMetadata response) {
         if ( response == null ) {
             return null;
@@ -33,7 +36,13 @@ public class ReturnValueResolver {
             result = this.dataMapper.toXml(responseValue, returnRawType);
         } else {
             if (this.restClientMethod.isReturnWrap()) {
-                if (this.restClientMethod.isReturnMap()) {
+                if (this.restClientMethod.isResultWrapper()) {
+                    if (this.restClientMethod.isDoubleWrap()) {
+                        result = this.dataMapper.convert(responseValue, this.restClientMethod.getSecondRawType(), returnRawType);
+                    } else {
+                        result = this.dataMapper.convert(responseValue, returnRawType);
+                    }
+                } else if (this.restClientMethod.isReturnMap()) {
                     result = this.dataMapper.convert(responseValue, Map.class);
                 } else {
                     result = this.dataMapper.convert(responseValue, this.restClientMethod.getSecondRawType(), returnRawType);

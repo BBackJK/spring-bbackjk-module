@@ -2,7 +2,7 @@ package test.bbackjk.http.core.reflector;
 
 import java.util.List;
 
-class ParameterArgumentHandlerFactory {
+final class ParameterArgumentHandlerFactory {
 
     private ParameterArgumentHandlerFactory() {
         throw new RuntimeException();

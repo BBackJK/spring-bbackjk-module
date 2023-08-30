@@ -1,9 +1,9 @@
 package test.bbackjk.http.core.reflector;
 
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.http.MediaType;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.exceptions.RestClientCommonException;
@@ -156,6 +156,10 @@ public class RequestMethodMetadata {
         return this.returnMetadata.isWrap();
     }
 
+    public boolean isResultWrapper() {
+        return this.returnMetadata.isWrapOptional() || this.returnMetadata.isWrapRestResponse();
+    }
+
     public boolean isReturnMap() {
         return this.returnMetadata.isWrapMap();
     }
@@ -176,6 +180,10 @@ public class RequestMethodMetadata {
         return this.returnMetadata.isWrapRestResponse();
     }
 
+    public boolean isDoubleWrap() {
+        return this.returnMetadata.isDoubleWrap();
+    }
+
     @Nullable
     public Class<?> getSecondRawType() {
         return this.returnMetadata.getSecondRawType();
@@ -185,7 +193,7 @@ public class RequestMethodMetadata {
         return this.returnMetadata.getRawType();
     }
 
-    @NotNull
+    @NonNull
     private List<String> getPathVariableNames(String pathname) {
         Matcher matcher = PATH_VARIABLE_PATTERN.matcher(pathname);
         List<String> result = new ArrayList<>();
@@ -196,7 +204,7 @@ public class RequestMethodMetadata {
         return result;
     }
 
-    @NotNull
+    @NonNull
     private Map<Integer, RequestParamMetadata> getParamMetadataList(Parameter[] parameters) {
         if ( parameters == null ) {
             return Collections.emptyMap();
@@ -220,7 +228,7 @@ public class RequestMethodMetadata {
         return null;
     }
     
-    @NotNull
+    @NonNull
     private RequestMethod parseRequestMethodByAnnotation(@Nullable Annotation annotation) {
         RequestMethod rm = RequestMethod.GET;
         if ( annotation == null ) {
@@ -247,7 +255,7 @@ public class RequestMethodMetadata {
         return rm;
     }
     
-    @NotNull
+    @NonNull
     private String parsePathNameByAnnotation(@Nullable Annotation annotation) {
         String url = "";
         if ( annotation == null ) {
@@ -257,7 +265,7 @@ public class RequestMethodMetadata {
         return urlValues != null && urlValues.length > 0 ? urlValues[0] : url;
     }
 
-    @NotNull
+    @NonNull
     private String getRequestUrl(String origin, String pathname) {
         String copyOrigin = origin == null ? "" : origin;
         String copyPathname = pathname == null ? "" : pathname;
@@ -279,7 +287,7 @@ public class RequestMethodMetadata {
         return copyOrigin + copyPathname;
     }
 
-    @NotNull
+    @NonNull
     private MediaType parseContentTypeByAnnotation(@Nullable Annotation annotation) {
         MediaType defaultContentType = MediaType.APPLICATION_JSON;
         if ( annotation == null ) {

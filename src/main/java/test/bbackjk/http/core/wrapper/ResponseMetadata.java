@@ -1,10 +1,12 @@
 package test.bbackjk.http.core.wrapper;
 
 import lombok.Getter;
+import lombok.ToString;
 import test.bbackjk.http.core.util.ObjectUtils;
 import test.bbackjk.http.core.util.RestClientUtils;
 
 @Getter
+@ToString
 public class ResponseMetadata {
     private static final String DEFAULT_ERROR_MESSAGE = "요청한 서버에서 에러가 발생하였습니다.";
     private final int httpCode;
@@ -27,9 +29,8 @@ public class ResponseMetadata {
         if ( this.success ) {
             return "";
         }
-        StringBuilder sb = new StringBuilder(String.valueOf(httpCode));
-        return sb.append(" ")
-                .append(ObjectUtils.isEmpty(stringResponse) ? DEFAULT_ERROR_MESSAGE : stringResponse).toString();
+        StringBuilder sb = new StringBuilder();
+        return sb.append(ObjectUtils.isEmpty(stringResponse) ? DEFAULT_ERROR_MESSAGE : stringResponse).toString();
     }
 
     public boolean isXml() {

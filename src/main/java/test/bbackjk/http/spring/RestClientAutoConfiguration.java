@@ -6,5 +6,5 @@ import org.springframework.context.annotation.Import;
 
 @Configuration
 @Import(AutoConfiguredRestClientScannerRegistrar.class)
-@ConditionalOnProperty(value = "bbackjk.http.enable", havingValue = "true")
+@ConditionalOnProperty(value = "bback.http.enable", havingValue = "true")
 public class RestClientAutoConfiguration { }

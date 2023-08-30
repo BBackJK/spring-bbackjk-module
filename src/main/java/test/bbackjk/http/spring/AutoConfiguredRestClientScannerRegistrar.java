@@ -1,6 +1,5 @@
 package test.bbackjk.http.spring;
 
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -11,6 +10,7 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.lang.NonNull;
 import org.springframework.util.ClassUtils;
 import test.bbackjk.http.core.annotations.RestClient;
 import test.bbackjk.http.core.exceptions.RestClientCommonException;
@@ -22,7 +22,7 @@ public class AutoConfiguredRestClientScannerRegistrar implements BeanFactoryAwar
     private DefaultListableBeanFactory beanFactory;
 
     @Override
-    public void registerBeanDefinitions(@NotNull AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+    public void registerBeanDefinitions(@NonNull AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
         BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(SCANNER_CONFIGURER_CLASS);
         builder.addPropertyValue("basePackage", this.getBasePackageName());
         builder.addPropertyValue("annotationClass", RestClient.class);
@@ -30,7 +30,7 @@ public class AutoConfiguredRestClientScannerRegistrar implements BeanFactoryAwar
     }
 
     @Override
-    public void setBeanFactory(@NotNull BeanFactory beanFactory) throws BeansException {
+    public void setBeanFactory(@NonNull BeanFactory beanFactory) throws BeansException {
         this.beanFactory = (DefaultListableBeanFactory) beanFactory;
     }
 

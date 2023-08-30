@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import test.bbackjk.http.sample.dto.MemberDto;
 import test.bbackjk.http.sample.dto.SampleRequestDto;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +44,11 @@ public class SampleResponseController {
     }
 
     @GetMapping("/api/v1/{path1}/hello4")
-    String hello4(@PathVariable String path1, String key1, String key2, String key3) {
+    String hello4(
+            HttpServletRequest request
+            , @PathVariable String path1, String key1, String key2, String key3
+    ) {
+        log.info("auth :: {}", request.getHeader("Authorization"));
         log.info("path1 :: {}", path1);
         log.info("key1 :: {}", key1);
         log.info("key2 :: {}", key2);
@@ -71,12 +76,10 @@ public class SampleResponseController {
 
     @PostMapping("/api/v1/post3")
     ResponseEntity<MemberDto> post3(@RequestBody MemberDto findMemberDto) {
-        if ( findMemberDto == null ) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
         MemberDto result = this.dummyMember.stream().filter(m -> m.getId() == findMemberDto.getId()).findFirst().orElseGet(() -> null);
         if ( result == null ) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.ok(this.dummyMember.get(0));
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             //throw new RuntimeException("테스트 런타임");
         }
 

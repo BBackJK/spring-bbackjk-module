@@ -31,7 +31,7 @@ public class OkHttpAgent implements HttpAgent {
     public OkHttpAgent(RestClientConnectProperties connectProperties) {
         OkHttpClient.Builder okHttpBuilder = new OkHttpClient.Builder();
 
-        Duration timeout = Duration.ofSeconds(connectProperties.getTimout());
+        Duration timeout = Duration.ofSeconds(connectProperties.getSocketTimeout());
 
         // 연결하려는 서버와 connect 를 하는 제한 시간 설정 ( default 10s ) ==> SocketTimeoutException 발생
         okHttpBuilder.connectTimeout(timeout);
@@ -44,8 +44,8 @@ public class OkHttpAgent implements HttpAgent {
 
         okHttpBuilder.connectionPool(
                 new ConnectionPool(
-                        connectProperties.getPoolSize()
-                        , connectProperties.getKeepAlive()
+                        connectProperties.getConnectPoolSize()
+                        , connectProperties.getConnectKeepAlive()
                         , TimeUnit.MINUTES
                 )
         );

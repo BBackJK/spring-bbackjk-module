@@ -1,0 +1,265 @@
+package test.bbackjk.http.core.bean.agent;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import test.bbackjk.http.core.exceptions.RestClientCallException;
+import test.bbackjk.http.core.interfaces.HttpAgent;
+import test.bbackjk.http.core.wrapper.RequestMetadata;
+import test.bbackjk.http.core.wrapper.ResponseMetadata;
+
+@Component
+@Slf4j
+public class ApacheHttpClientAgent implements HttpAgent {
+
+    private static final String LOGGING_DELIMITER = "========================================================================================";
+//    private final HttpClient httpClient;
+//    private final ObjectMapper om;
+//
+//    public ApacheHttpClientAgent(RestClientConnectProperties connectProperties) {
+//
+//        PoolingHttpClientConnectionManager poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager();
+//        poolingHttpClientConnectionManager.setMaxTotal(connectProperties.getConnectPoolSize());
+//        poolingHttpClientConnectionManager.setDefaultMaxPerRoute(connectProperties.getConnectPoolPerRoute());
+//
+//        RequestConfig config = RequestConfig.custom()
+//                .setConnectionRequestTimeout(Timeout.ofSeconds(connectProperties.getConnectKeepAlive()))
+//                .setConnectionKeepAlive(Timeout.ofSeconds(connectProperties.getConnectKeepAlive()))
+//                .build();
+//
+//        this.om = new ObjectMapper();
+//        this.httpClient = HttpClients.custom()
+//                .setConnectionManager(poolingHttpClientConnectionManager)
+//                .setDefaultRequestConfig(config)
+//                .evictIdleConnections(TimeValue.ofSeconds(connectProperties.getConnectKeepAlive()))
+//                .evictExpiredConnections()
+//                .build();
+//    }
+
+    @Override
+    public ResponseMetadata doGet(RequestMetadata requestMetadata) throws RestClientCallException {
+//        return this.doCall(requestMetadata, RequestMethod.GET);
+        return null;
+    }
+
+    @Override
+    public ResponseMetadata doPost(RequestMetadata requestMetadata) throws RestClientCallException {
+//        return this.doCall(requestMetadata, RequestMethod.POST);
+        return null;
+    }
+
+    @Override
+    public ResponseMetadata doPatch(RequestMetadata requestMetadata) throws RestClientCallException {
+//        return this.doCall(requestMetadata, RequestMethod.PATCH);
+        return null;
+    }
+
+    @Override
+    public ResponseMetadata doPut(RequestMetadata requestMetadata) throws RestClientCallException {
+//        return this.doCall(requestMetadata, RequestMethod.PUT);
+        return null;
+    }
+
+    @Override
+    public ResponseMetadata doDelete(RequestMetadata requestMetadata) throws RestClientCallException {
+//        return this.doCall(requestMetadata, RequestMethod.DELETE);
+        return null;
+    }
+
+//    private ResponseMetadata doCall(RequestMetadata requestMetadata, RequestMethod requestMethod) {
+//        ClassicRequestBuilder requestBuilder = ClassicRequestBuilder
+//                .create(requestMethod.name())
+//                .setUri(requestMetadata.getUrl());
+//        this.headerValueHandler(requestBuilder, requestMetadata);
+//        this.queryParameterHandler(requestBuilder, requestMetadata.getQueryValuesMap());
+//        this.bodyHandler(requestBuilder, requestMetadata);
+//        LogHelper logger = requestMetadata.getRestClientLogger();
+//
+//        StringHttpClientResponseHandler responseHandler = new StringHttpClientResponseHandler();
+//
+//        try {
+//            ClassicHttpRequest classicHttpRequest = requestBuilder.build();
+//            this.requestLogging(logger, classicHttpRequest);
+//            long startTimeAt = System.currentTimeMillis();
+//            String result = this.httpClient.execute(classicHttpRequest, responseHandler);
+//            long endTimeAt = System.currentTimeMillis();
+//            String reasonPhrase = responseHandler.getReasonPhrase();
+//            int httpCode = responseHandler.getHttpCode();
+//            Header[] headers = responseHandler.getHeaders();
+//            String contentType = "text/plain";
+//            for (Header h : headers) {
+//                if (RestClientUtils.HEADER_CONTENT_TYPE_KEY.equals(h.getName())) {
+//                    contentType = h.getValue();
+//                }
+//            }
+//            this.responseLogging(logger, result, headers, responseHandler.getProtocolVersion(), endTimeAt - startTimeAt);
+//            return new ResponseMetadata(httpCode, RestClientUtils.isSuccess(httpCode) ? result : reasonPhrase, contentType);
+//        } catch (IOException e) {
+//            throw new RestClientCallException(e);
+//        }
+//    }
+//
+//    private void queryParameterHandler(ClassicRequestBuilder requestBuilder, Map<String, String> queryValues) {
+//        if (!queryValues.isEmpty()) {
+//            for (Map.Entry<String, String> kv : queryValues.entrySet()) {
+//                String val = kv.getValue();
+//                if ( val != null ) {
+//                    requestBuilder.addParameter(kv.getKey(), val);
+//                }
+//            }
+//        }
+//    }
+//
+//    private void headerValueHandler(ClassicRequestBuilder requestBuilder, RequestMetadata requestMetadata) {
+//        Map<String, String> headerValues = requestMetadata.getHeaderValuesMap();
+//        if (!headerValues.isEmpty()) {
+//            for (Map.Entry<String, String> kv : headerValues.entrySet()) {
+//                String val = kv.getValue();
+//                if ( val != null ) {
+//                    requestBuilder.addHeader(kv.getKey(), val);
+//                }
+//            }
+//        }
+//        requestBuilder.addHeader(HttpHeaders.CONTENT_TYPE, requestMetadata.getContentType().toString());
+//    }
+//
+//    private void bodyHandler(ClassicRequestBuilder requestBuilder, RequestMetadata requestMetadata) {
+//        Object body = requestMetadata.getBodyData();
+//        if ( body != null ) {
+//            if (requestMetadata.isFormContent()) {
+//                Map<?,?> map = this.om.convertValue(body, Map.class);
+//                List<NameValuePair> urlEncodedFormList = new ArrayList<>();
+//                for (Map.Entry<?, ?> kv : map.entrySet()) {
+//                    Object key = kv.getKey();
+//                    Object value = kv.getValue();
+//                    String keys = null;
+//                    String values = null;
+//                    if (key != null) {
+//                        keys = String.valueOf(key);
+//                        values = value == null ? null : String.valueOf(value);
+//                        urlEncodedFormList.add(new BasicNameValuePair(keys, values));
+//                    }
+//                }
+//                requestBuilder.setEntity(new UrlEncodedFormEntity(urlEncodedFormList, StandardCharsets.UTF_8));
+//            } else {
+//                String jsonString = null;
+//                try {
+//                    jsonString = this.om.writeValueAsString(body);
+//                } catch (JsonProcessingException e) {
+//                    throw new RestClientCallException(e);
+//                }
+//                StringEntity requestEntity = new StringEntity(
+//                        jsonString,
+//                        ContentType.APPLICATION_JSON);
+//                requestBuilder.setEntity(requestEntity);
+//            }
+//        }
+//    }
+//
+//    @Contract(threading = ThreadingBehavior.STATELESS)
+//    public static class StringHttpClientResponseHandler extends AbstractHttpClientResponseHandler<String> {
+//
+//        private int httpCode;
+//        private String result;
+//        private String reasonPhrase;
+//        private Header[] headers;
+//        private ProtocolVersion protocolVersion;
+//
+//        @Override
+//        public String handleEntity(final HttpEntity entity) throws IOException {
+//            try {
+//                return EntityUtils.toString(entity);
+//            } catch (final ParseException ex) {
+//                throw new ClientProtocolException(ex);
+//            }
+//        }
+//
+//        @Override
+//        public String handleResponse(final ClassicHttpResponse response) throws IOException {
+//            this.headers = response.getHeaders();
+//            this.protocolVersion = response.getVersion();
+//            this.httpCode = response.getCode();
+//            this.reasonPhrase = response.getReasonPhrase();
+//            String stringResponse = super.handleResponse(response);
+//            this.result = stringResponse;
+//            return stringResponse;
+//        }
+//
+//        public int getHttpCode() {
+//            return this.httpCode;
+//        }
+//
+//        public String getResult() {
+//            return this.result;
+//        }
+//
+//        public String getReasonPhrase() {
+//            return this.reasonPhrase;
+//        }
+//
+//        public Header[] getHeaders() {
+//            return this.headers;
+//        }
+//
+//        public ProtocolVersion getProtocolVersion() {
+//            return this.protocolVersion;
+//        }
+//
+//    }
+//
+//    private void requestLogging(LogHelper logger, ClassicHttpRequest request) {
+//        Header[] headers = request.getHeaders();
+//        int headerSize = headers.length;
+//
+//        String url = "";
+//        try {
+//            url = request.getUri().toString();
+//        } catch (URISyntaxException ignore) {
+//            // ignore...
+//        }
+//        logger.log("Request\t\t\t{}", LOGGING_DELIMITER);
+//        logger.log("Request\t\t\t| Url\t\t\t\t: {} {} ", request.getMethod(), url);
+//        if (headerSize < 1) {
+//            logger.log("Request\t\t\t| Header\t\t\t: EMPTY");
+//        } else {
+//            for (Header h : headers) {
+//                logger.log("Request\t\t\t| Header\t\t\t: {} - {}", h.getName(), h.getValue());
+//            }
+//        }
+//        HttpEntity httpEntity = request.getEntity();
+//
+//        if (httpEntity != null) {
+//            try (ByteArrayOutputStream out = new ByteArrayOutputStream((int) httpEntity.getContentLength())) {
+//                httpEntity.writeTo(out);
+//                byte[] contents = out.toByteArray();
+//                logger.log("Request\t\t\t| Body\t\t\t\t: {}", new String(contents, StandardCharsets.UTF_8));
+//            } catch (IOException ignore) {
+//                // ignore..
+//            }
+//        }
+//        String contentType = null;
+//        try {
+//          contentType = request.getHeader(RestClientUtils.HEADER_CONTENT_TYPE_KEY).getValue();
+//        } catch (Exception ignore) {
+//            // ignore..
+//        }
+//        logger.log("Request\t\t\t| Content-Type\t\t: {}", contentType);
+//
+//        logger.log("Request\t\t\t{}", LOGGING_DELIMITER);
+//    }
+//
+//    private void responseLogging(LogHelper logger, String result, Header[] headers, ProtocolVersion protocolVersion, long callTimeDiff) {
+//        int headerSize = headers.length;
+//
+//        logger.log("Response\t\t\t{}", LOGGING_DELIMITER);
+//        logger.log("Response\t\t\t| Protocol - Millis\t: {} - {} ms", protocolVersion.getProtocol(), callTimeDiff);
+//        logger.log("Response\t\t\t| Data(String)\t\t: {}", result);
+//        if (headerSize < 1) {
+//            logger.log("Response\t\t\t| Header\t\t\t: EMPTY");
+//        } else {
+//            for (Header h : headers) {
+//                logger.log("Response\t\t\t| Header\t\t\t: {} - {}", h.getName(), h.getValue());
+//            }
+//        }
+//        logger.log("Response\t\t\t{}", LOGGING_DELIMITER);
+//    }
+}

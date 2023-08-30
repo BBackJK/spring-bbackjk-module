@@ -1,6 +1,6 @@
 package test.bbackjk.http.core.proxy;
 
-import org.jetbrains.annotations.Nullable;
+import org.springframework.lang.Nullable;
 import test.bbackjk.http.core.annotations.RestClient;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
 import test.bbackjk.http.core.exceptions.RestClientDataMappingException;
@@ -8,13 +8,9 @@ import test.bbackjk.http.core.helper.LogHelper;
 import test.bbackjk.http.core.interfaces.HttpAgent;
 import test.bbackjk.http.core.interfaces.ResponseMapper;
 import test.bbackjk.http.core.interfaces.RestCallback;
-import test.bbackjk.http.core.reflector.RequestMethodMetadata;
-import test.bbackjk.http.core.util.ClassUtil;
-import test.bbackjk.http.core.util.ObjectUtils;
 import test.bbackjk.http.core.util.RestMapUtils;
 import test.bbackjk.http.core.wrapper.ResponseMetadata;
 import test.bbackjk.http.core.wrapper.RestClientInvoker;
-import test.bbackjk.http.core.wrapper.RestResponse;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -60,6 +56,7 @@ class RestClientProxy<T> implements InvocationHandler {
         try {
             result = invoker.getRestReturnValueResolver().resolve(response);
         } catch (RestClientDataMappingException e) {
+            LOGGER.err("response :: \n{}", response.getStringResponse());
             LOGGER.err(e.getMessage());
             throw new RestClientCallException();
         }

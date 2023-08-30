@@ -7,7 +7,6 @@ import test.bbackjk.http.core.bean.RestClientProxyFactoryBean;
 import java.util.Set;
 
 public abstract class AbstractPostBeanDefinitionProcessor {
-
     private static final String FACTORY_BEAN_OBJECT_TYPE = "factoryBeanObjectType";
 
     public void process(Set<BeanDefinitionHolder> beanDefinitions) {

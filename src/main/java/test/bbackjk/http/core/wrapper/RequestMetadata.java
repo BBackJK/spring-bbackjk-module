@@ -2,8 +2,8 @@ package test.bbackjk.http.core.wrapper;
 
 
 import lombok.Getter;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.http.MediaType;
+import org.springframework.lang.Nullable;
 import test.bbackjk.http.core.helper.LogHelper;
 
 import java.util.LinkedHashMap;

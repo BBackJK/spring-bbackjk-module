@@ -1,6 +1,5 @@
 package test.bbackjk.http.spring;
 
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
@@ -15,6 +14,7 @@ import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import test.bbackjk.http.core.exceptions.RestClientCommonException;
 import test.bbackjk.http.core.helper.LogHelper;
@@ -68,7 +68,7 @@ class ClassPathRestClientScanner extends ClassPathBeanDefinitionScanner {
     /**
      * ClassPathBeanDefinitionScanner 의 scan 함수에서 해당 doScan 을 실행
      */
-    @NotNull
+    @NonNull
     @Override
     public Set<BeanDefinitionHolder> doScan(String... basePackage) {
         AbstractPostBeanDefinitionProcessor beanDefinitionProcessor = new RestClientPostBeanDefinitionProcessor(

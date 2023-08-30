@@ -1,8 +1,8 @@
 package test.bbackjk.http.core.reflector;
 
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -29,7 +29,7 @@ class RequestParamMetadata {
     @Getter
     private final String paramName;
 
-    public RequestParamMetadata(@NotNull Parameter parameter) {
+    public RequestParamMetadata(@NonNull Parameter parameter) {
         this.paramClass = parameter.getType();
         this.getterMethodNames = ClassUtil.getHasGetterFieldNameByClass(this.paramClass);
         this.annotation = this.parseAnnotation(parameter);
@@ -100,7 +100,7 @@ class RequestParamMetadata {
         return null;
     }
 
-    @NotNull
+    @NonNull
     private String parseParamName(Parameter parameter, Annotation annotation) {
         if ( annotation != null && !RequestBody.class.equals(annotation.annotationType()) ) {
             String result = null;

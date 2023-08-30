@@ -4,7 +4,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.lang.Nullable;
 import test.bbackjk.http.core.annotations.RestClient;
-import test.bbackjk.http.core.bean.agent.OkHttpAgent;
+import test.bbackjk.http.core.bean.agent.RestTemplateAgent;
 import test.bbackjk.http.core.bean.mapper.DefaultResponseMapper;
 import test.bbackjk.http.core.exceptions.RestClientCommonException;
 import test.bbackjk.http.core.helper.LogHelper;
@@ -19,7 +19,7 @@ public class RestClientPostBeanDefinitionProcessor extends AbstractPostBeanDefin
 
     private static final LogHelper LOGGER = LogHelper.of(RestClientPostBeanDefinitionProcessor.class);
     private static final ClassLoader[] CLASS_LOADERS = ClassUtil.getClassLoaders();
-    private static final String DEFAULT_AGENT_CLASS_NAME = "OkHttpAgent";
+    private static final String DEFAULT_AGENT_CLASS_NAME = "RestTemplateAgent";
     private static final String DEFAULT_MAPPER_CLASS_NAME = "DefaultResponseMapper";
 
     private final Set<BeanDefinition> httpAgentBeanDefinitionSet;
@@ -83,7 +83,7 @@ public class RestClientPostBeanDefinitionProcessor extends AbstractPostBeanDefin
      * HttpAgent 로 이루어진 BeanDefinition 중 해당 RestClient 의 설정으로 설정한 class 와 일치하는 httpAgent 를 가져온다. 없으면 defaultHttpAgent
      */
     private BeanDefinition findHttpAgentBeanDefinition(String restClientBeanClassName) {
-        Class<? extends HttpAgent> httpAgentClass = OkHttpAgent.class;
+        Class<? extends HttpAgent> httpAgentClass = RestTemplateAgent.class;
         try {
             RestClient restClient = this.getRestClientAnnotation(restClientBeanClassName);
             if ( restClient != null ) {

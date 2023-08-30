@@ -6,14 +6,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import test.bbackjk.http.core.annotations.RestClient;
+import test.bbackjk.http.core.bean.agent.UnirestHttpAgent;
 import test.bbackjk.http.core.interfaces.RestCallback;
+import test.bbackjk.http.core.wrapper.RestResponse;
 import test.bbackjk.http.sample.dto.MemberDto;
 import test.bbackjk.http.sample.dto.SampleRequestDto;
-import test.bbackjk.http.core.wrapper.RestResponse;
 
 import java.util.List;
 
-@RestClient(value = "HelloPost", url = "http://localhost:8080")
+@RestClient(value = "HelloPost", url = "http://localhost:8080", agent = UnirestHttpAgent.class)
 public interface PostClient {
 
     @RequestMapping(value = "/api/v1/post1", method = RequestMethod.POST)

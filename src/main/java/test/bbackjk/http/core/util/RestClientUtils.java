@@ -10,6 +10,7 @@ import java.util.Map;
 public class RestClientUtils {
 
     public final String HEADER_CONTENT_TYPE_KEY = "Content-Type";
+    public final String HEADER_CONTENT_TYPE_DEFAULT = "text/plain";
 
     public boolean isSuccess(int httpCode) {
         return httpCode / 100 == 2;

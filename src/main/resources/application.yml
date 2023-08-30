@@ -1,7 +1,9 @@
-bbackjk:
+bback:
   http:
     enable: true
     connect:
-      timeout: 180 # 3분
-      pool-size: 5 # 5개
-      keep-alive: 5 # 5개
+      pool-size: 20 # 20개
+      keep-alive: 60 # 60초 -> 1분
+      pool-per-route: 5 # 5개
+    socket:
+      timeout: 180 # 180초 -> 3분

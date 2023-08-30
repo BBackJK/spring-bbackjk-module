@@ -2,7 +2,7 @@ package test.bbackjk.http.core.reflector;
 
 import lombok.Getter;
 import org.apache.el.stream.Optional;
-import org.jetbrains.annotations.Nullable;
+import org.springframework.lang.Nullable;
 import test.bbackjk.http.core.helper.LogHelper;
 import test.bbackjk.http.core.wrapper.RestResponse;
 import test.bbackjk.http.core.exceptions.RestClientCommonException;
@@ -78,7 +78,7 @@ class RequestReturnMetadata {
     }
 
     public boolean isDoubleWrap() {
-        return this.secondRawType != null;
+        return this.secondRawType != null && !this.secondRawType.equals(this.returnClass);
     }
 
     private ParameterizedType getParameterType(Type returnType) {
