@@ -16,6 +16,8 @@ public class RestClientInvoker {
     @Getter
     private final RequestMethodMetadata methodMetadata;
     private final HttpAgent httpAgent;
+
+    @Getter
     private final LogHelper restClientLogger;
     @Getter
     @NonNull

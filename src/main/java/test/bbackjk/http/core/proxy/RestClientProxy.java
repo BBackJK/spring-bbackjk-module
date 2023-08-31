@@ -18,8 +18,6 @@ import java.util.Map;
 import java.util.Optional;
 
 class RestClientProxy<T> implements InvocationHandler {
-
-    private static final LogHelper LOGGER = LogHelper.of(RestClientProxy.class);
     private final RestClient restClient;
     private final HttpAgent httpAgent;
     private final ResponseMapper dataMapper;
@@ -47,7 +45,7 @@ class RestClientProxy<T> implements InvocationHandler {
                 throw new RestClientCallException(response.getFailMessage());
             }
         } catch (RestClientCallException e) {
-            LOGGER.err(e.getMessage());
+            invoker.getRestClientLogger().err(e.getMessage());
             throw new RestClientCallException();
         }
 
@@ -56,8 +54,8 @@ class RestClientProxy<T> implements InvocationHandler {
         try {
             result = invoker.getRestReturnValueResolver().resolve(response);
         } catch (RestClientDataMappingException e) {
-            LOGGER.err("response :: \n{}", response.getStringResponse());
-            LOGGER.err(e.getMessage());
+            invoker.getRestClientLogger().err("response :: \n{}", response.getStringResponse());
+            invoker.getRestClientLogger().err(e.getMessage());
             throw new RestClientCallException();
         }
 

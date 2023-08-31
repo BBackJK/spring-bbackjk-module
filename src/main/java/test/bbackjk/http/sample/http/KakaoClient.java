@@ -5,12 +5,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import test.bbackjk.http.core.annotations.RestClient;
+import test.bbackjk.http.core.bean.agent.UnirestHttpAgent;
 import test.bbackjk.http.sample.dto.KakaoTokenResponseModel;
 import test.bbackjk.http.sample.dto.KakaoUserInfoResponseModel;
 
 import java.util.Map;
 
-@RestClient
+@RestClient(agent = UnirestHttpAgent.class)
 public interface KakaoClient {
 
     @PostMapping(

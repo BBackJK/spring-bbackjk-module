@@ -2,9 +2,8 @@ package test.bbackjk.http.core.bean.agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kong.unirest.*;
-import kong.unirest.HttpMethod;
-import kong.unirest.HttpRequest;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import test.bbackjk.http.core.configuration.RestClientConnectProperties;
 import test.bbackjk.http.core.exceptions.RestClientCallException;
@@ -18,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Component
 public class UnirestHttpAgent implements HttpAgent {
@@ -141,21 +139,12 @@ public class UnirestHttpAgent implements HttpAgent {
 
         if (isUrlEncodedForm) {
             try {
-                Map<?,?> map = this.om.convertValue(body, Map.class);
-                if (!map.isEmpty()) {
-                    HttpRequest<MultipartBody> result = null;
-                    for (Map.Entry<?, ?> kv : map.entrySet()) {
-                        Object key = kv.getKey();
-                        Object value = kv.getValue();
-                        if (key != null && value != null) {
-                            result = requestBuilder.field(String.valueOf(key), String.valueOf(value));
-                        }
-                    }
-                    return result == null ? requestBuilder : result;
-                } else {
-                    return requestBuilder;
-                }
+                Map<String, Object> map = this.om.convertValue(body, Map.class);
+                return (map == null || map.isEmpty())
+                        ? requestBuilder
+                        : requestBuilder.fields(map);
             } catch (IllegalArgumentException e) {
+                logger.warn("x-www-form-urlencoded 의 form data 가 Map 으로 변환되는데에 에러가 발생하였습니다. body :: {}", body);
                 logger.warn(e.getMessage());
                 return requestBuilder.body(body);
             }
